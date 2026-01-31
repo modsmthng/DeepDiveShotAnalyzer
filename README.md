@@ -1,10 +1,10 @@
 # DeepDiveShotAnalyzer
 Deep Dive Shot Analyzer
-FOR GAGGIMATE
+(for GaggiMate)
 by modsmthng
 Used to develop Automatic Pro v3
 
-Simply download the index.html file and open it.
+**Simply download the index.html file and open it.**
 
 # DISCLAIMER
 The code has been optimized and commented using AI.
