@@ -36,6 +36,17 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
+// --- Helper for Formatting Target Names ---
+function formatTargetName(name) {
+    if (!name) return "";
+    // Special mapping for weight
+    if (name.toLowerCase() === "volumetric" || name.toLowerCase() === "weight") return "Weight";
+    if (name.toLowerCase() === "pumped") return "Pumped";
+    if (name.toLowerCase() === "duration") return "Time";
+    // Capitalize first letter for everything else
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+}
+
 // --- Column Config ---
 const columnConfig = [
     { id: 'duration', label: 'Duration (s)', type: 'val', group: 'basics', default: true, targetType: 'duration' },
@@ -305,21 +316,17 @@ function analyzeShot(data, filename) {
                     const lastW = samples[samples.length-1].v;  // Cup weight
                     const lastVF = samples[samples.length-1].vf; // Volumetric flow (Scale flow)
                     
-                    // --- PREDICTIVE LOGIC (REPLICATING C++) ---
+                    // --- PREDICTIVE LOGIC ---
                     let predictedW = lastW;
 
                     if (lastW > 0.1) {
                         let currentRate = (lastVF !== undefined) ? lastVF : lastF;
                         let predictedAdded = currentRate * (predictiveDelayMs / 500.0); //1000
                         
-                        // C++ Clamp (0.0 - 8.0)
                         if (predictedAdded < 0) predictedAdded = 0;
                         if (predictedAdded > 8.0) predictedAdded = 8.0;
 
                         predictedW = lastW + predictedAdded;
-                        console.log(`Phase ${phaseNum}: W=${lastW}, Rate=${currentRate}. Pred=${predictedW.toFixed(2)}`);
-                    } else {
-                        console.log(`Phase ${phaseNum}: Weight too low (${lastW}), skipping prediction.`);
                     }
                     
                     finalPredictedWeight = predictedW;
@@ -339,15 +346,10 @@ function analyzeShot(data, filename) {
                         if (tgt.operator === 'gte' && measured >= tgt.value) hit = true;
                         if (tgt.operator === 'lte' && measured <= tgt.value) hit = true;
 
-                        // Check Prediction for Weight/Volumetric
                         if (!hit && (tgt.type === 'weight' || tgt.type === 'volumetric') && tgt.operator === 'gte') {
-                            if (predictedW >= tgt.value) {
-                                hit = true;
-                                console.log(`  -> Hit via Prediction! (${predictedW.toFixed(2)} >= ${tgt.value})`);
-                            }
+                            if (predictedW >= tgt.value) hit = true;
                         }
                         
-                        // Loose flow match for pre-infusion
                         if (!hit && tgt.type === 'flow' && tgt.operator === 'lte' && measured <= (tgt.value + 0.2)) {
                             hit = true;
                         }
@@ -374,7 +376,8 @@ function analyzeShot(data, filename) {
                         else if(bestMatch.type === 'flow') icon = "💧"; 
                         else if(bestMatch.type === 'pressure') icon = "💨";
 
-                        exitReasonBadge = `<br><span class="reason-badge reason-target">${icon} ${bestMatch.type}</span>`;
+                        // FIX: Added formatTargetName() call here
+                        exitReasonBadge = `<br><span class="reason-badge reason-target">${icon} ${formatTargetName(bestMatch.type)}</span>`;
                         exitType = bestMatch.type;
                     }
                 }
@@ -406,7 +409,6 @@ function analyzeShot(data, filename) {
         tdPhase.innerHTML = tablePhaseHtml;
         tr.appendChild(tdPhase);
 
-        // --- BODY ROWS (USE LOCAL VARS) ---
         columnConfig.forEach(col => {
             const td = document.createElement('td');
             td.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
@@ -440,8 +442,8 @@ function analyzeShot(data, filename) {
                 case 'tf_avg': val = statTF.avg.toFixed(1); break;
                 case 'tt_se': val = `${statTT.start.toFixed(1)} / ${statTT.end.toFixed(1)}`; break;
                 case 'tt_mm': val = `${statTT.min.toFixed(1)} / ${statTT.max.toFixed(1)}`; break;
-                case 'tt_avg': val = statTT.avg.toFixed(1); break; // Correct: statTT
-                case 'sys_raw': val = (startSysInfo.raw !== undefined) ? startSysInfo.raw : "-"; break; // Correct: startSysInfo
+                case 'tt_avg': val = statTT.avg.toFixed(1); break; 
+                case 'sys_raw': val = (startSysInfo.raw !== undefined) ? startSysInfo.raw : "-"; break;
                 case 'sys_shot_vol': val = (startSysInfo.shotStartedVolumetric !== undefined) ? getBool(startSysInfo.shotStartedVolumetric) : "-"; break;
                 case 'sys_curr_vol': val = (startSysInfo.currentlyVolumetric !== undefined) ? getBool(startSysInfo.currentlyVolumetric) : "-"; break;
                 case 'sys_scale': val = (startSysInfo.bluetoothScaleConnected !== undefined) ? getBool(startSysInfo.bluetoothScaleConnected) : "-"; break;
@@ -452,7 +454,6 @@ function analyzeShot(data, filename) {
             if (profilePhase && col.targetType) {
                 let tVal = null;
                 let isTrigger = (exitType === col.targetType);
-
                 let effectiveTargetType = col.targetType;
                 if (col.id === 'weight') effectiveTargetType = 'volumetric'; 
 
@@ -462,13 +463,13 @@ function analyzeShot(data, filename) {
                     let matched = profilePhase.targets.find(t => t.type === effectiveTargetType);
                     if (!matched && col.targetType === 'pumped') matched = profilePhase.targets.find(t => t.type === 'pumped');
                     if (!matched && col.targetType === 'weight') matched = profilePhase.targets.find(t => t.type === 'volumetric');
-
                     if (matched) tVal = (matched.operator === 'gte' ? '> ' : '< ') + matched.value;
                 }
                 
                 if (tVal) {
                     if (exitType === 'volumetric' && col.id === 'weight') isTrigger = true;
                     const style = isTrigger ? "trigger-hit" : "val-target";
+                    // FIX: formatTargetName() also used for table labels
                     val += ` <span class="${style}">/ ${tVal}</span>`;
                 }
                 
@@ -483,7 +484,7 @@ function analyzeShot(data, filename) {
     });
 
     // --- FOOTER (GLOBAL STATS) ---
-    const gSamples = data.samples; // DEFINED HERE
+    const gSamples = data.samples;
     const gStatsP = getMetricStats(gSamples, 'cp');
     const gStatsTP = getMetricStats(gSamples, 'tp');
     const gStatsF = getMetricStats(gSamples, 'fl');
@@ -502,7 +503,6 @@ function analyzeShot(data, filename) {
     tdFootPhase.className = "phase-col"; tdFootPhase.innerText = "Total / Avg";
     trFoot.appendChild(tdFootPhase);
 
-    // --- FOOTER ROWS (USE GLOBAL VARS) ---
     columnConfig.forEach(col => {
         const td = document.createElement('td');
         td.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
@@ -534,8 +534,8 @@ function analyzeShot(data, filename) {
             case 'tf_avg': val = gStatsTF.avg.toFixed(1); break;
             case 'tt_se': val = `${gStatsTT.start.toFixed(1)} / ${gStatsTT.end.toFixed(1)}`; break;
             case 'tt_mm': val = `${gStatsTT.min.toFixed(1)} / ${gStatsTT.max.toFixed(1)}`; break;
-            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break; // Correct: gStatsTT
-            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break; // Correct: gSamples
+            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break;
+            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break;
             case 'sys_shot_vol': val = (gSamples[0].systemInfo?.shotStartedVolumetric !== undefined) ? ((gSamples[0].systemInfo.shotStartedVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_curr_vol': val = (gSamples[0].systemInfo?.currentlyVolumetric !== undefined) ? ((gSamples[0].systemInfo.currentlyVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_scale': val = (gSamples[0].systemInfo?.bluetoothScaleConnected !== undefined) ? ((gSamples[0].systemInfo.bluetoothScaleConnected) ? "Yes" : "No") : "-"; break;
