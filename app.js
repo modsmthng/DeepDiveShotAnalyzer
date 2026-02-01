@@ -310,7 +310,7 @@ function analyzeShot(data, filename) {
 
                     if (lastW > 0.1) {
                         let currentRate = (lastVF !== undefined) ? lastVF : lastF;
-                        let predictedAdded = currentRate * (predictiveDelayMs / 1000.0);
+                        let predictedAdded = currentRate * (predictiveDelayMs / 500.0); //1000
                         
                         // C++ Clamp (0.0 - 8.0)
                         if (predictedAdded < 0) predictedAdded = 0;
