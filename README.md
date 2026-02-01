@@ -6,10 +6,9 @@ by modsmthng
 
 **Simply download the project and open the index.html**
 
-<img width="1679" height="690" alt="SCR-20260201-pxto" src="https://github.com/user-attachments/assets/fd2737af-1812-43b8-ad42-e976e078cedb" />
-<img width="1673" height="898" alt="SCR-20260201-pxrj" src="https://github.com/user-attachments/assets/c158d0e5-4b48-4445-bfed-536d3e45579e" />
-<img width="1687" height="675" alt="SCR-20260201-pxvg" src="https://github.com/user-attachments/assets/93428f66-1a01-43ac-9694-483f3a409470" />
-
+<img width="1674" height="896" alt="SCR-20260201-qmem" src="https://github.com/user-attachments/assets/a9351392-621e-4d47-8bfa-c5c3b6f19a3b" />
+<img width="1673" height="694" alt="SCR-20260201-qlkw" src="https://github.com/user-attachments/assets/b069ca59-864c-4bb7-a682-2b9632abc3a1" />
+<img width="1679" height="673" alt="SCR-20260201-qmhh" src="https://github.com/user-attachments/assets/1f936fc2-624a-4797-83d4-9a784cad745a" />
 
 # DISCLAIMER
 The code has been optimized and commented using AI.
