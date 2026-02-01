@@ -321,7 +321,7 @@ function analyzeShot(data, filename) {
 
                     if (lastW > 0.1) {
                         let currentRate = (lastVF !== undefined) ? lastVF : lastF;
-                        let predictedAdded = currentRate * (predictiveDelayMs / 500.0); //1000
+                        let predictedAdded = currentRate * (predictiveDelayMs / 500.0); //or 1000
                         
                         if (predictedAdded < 0) predictedAdded = 0;
                         if (predictedAdded > 8.0) predictedAdded = 8.0;
