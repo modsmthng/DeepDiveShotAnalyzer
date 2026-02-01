@@ -6,10 +6,9 @@ by modsmthng
 
 **Simply download the project and open the index.html**
 
-
-<img width="1670" height="638" alt="SCR-20260131-pmvk" src="https://github.com/user-attachments/assets/a34a5584-fca6-42b3-aeca-04bec0a76235" />
-<img width="1668" height="733" alt="SCR-20260131-pnau" src="https://github.com/user-attachments/assets/c55be14a-cdec-44d1-a269-ef75835e5707" />
-<img width="1671" height="668" alt="SCR-20260131-pncs" src="https://github.com/user-attachments/assets/269c7744-fd01-46f9-ba72-79fb4443e6fe" />
+<img width="1679" height="690" alt="SCR-20260201-pxto" src="https://github.com/user-attachments/assets/fd2737af-1812-43b8-ad42-e976e078cedb" />
+<img width="1673" height="898" alt="SCR-20260201-pxrj" src="https://github.com/user-attachments/assets/c158d0e5-4b48-4445-bfed-536d3e45579e" />
+<img width="1687" height="675" alt="SCR-20260201-pxvg" src="https://github.com/user-attachments/assets/93428f66-1a01-43ac-9694-483f3a409470" />
 
 
 # DISCLAIMER
