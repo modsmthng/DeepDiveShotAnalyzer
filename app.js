@@ -127,7 +127,7 @@ function checkAndAnalyze() {
 function renderControls() {
     controlsGrid.innerHTML = '';
 
-    // --- NEW: Analysis Settings (Predictive Delay) ---
+    // --- Analysis Settings (Predictive Delay) ---
     let settingsDiv = document.getElementById('analysis-settings');
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
@@ -148,7 +148,6 @@ function renderControls() {
         `;
         controlsGrid.parentNode.insertBefore(settingsDiv, controlsGrid);
         
-        // Add listeners for both change and input (Enter key)
         const input = document.getElementById('predictive-delay-input');
         input.addEventListener('change', () => analyzeShot(currentShotData, document.getElementById('label-shot').innerText));
         input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
@@ -282,7 +281,7 @@ function analyzeShot(data, filename) {
         let exitReasonBadge = "";
         let exitType = ""; 
         let profilePhase = null;
-        let finalPredictedWeight = null; // Store for table display
+        let finalPredictedWeight = null; 
 
         if (currentProfileData && currentProfileData.phases) {
             const cleanName = rawName ? rawName.trim().toLowerCase() : "";
@@ -290,23 +289,40 @@ function analyzeShot(data, filename) {
             
             if (profilePhase) {
                 const profDur = profilePhase.duration;
+                // Time Check
                 if (Math.abs(duration - profDur) < 0.5 || duration >= profDur) {
                     exitReasonBadge = `<br><span class="reason-badge reason-time">⏱️ Time Limit</span>`;
                     exitType = "duration";
                 }
                 
+                // --- TARGET LOGIC ---
                 if (profilePhase.targets && (!exitType || duration < (profDur - 0.5))) {
                     let wPumped = 0;
                     for (let i = 1; i < samples.length; i++) wPumped += samples[i].fl * ((samples[i].t - samples[i-1].t) / 1000);
                     
                     const lastP = samples[samples.length-1].cp;
-                    const lastF = samples[samples.length-1].fl;
-                    const lastW = samples[samples.length-1].v;
+                    const lastF = samples[samples.length-1].fl; // Pump flow
+                    const lastW = samples[samples.length-1].v;  // Cup weight
+                    const lastVF = samples[samples.length-1].vf; // Volumetric flow (Scale flow)
                     
-                    // CALCULATE PREDICTION FOR DISPLAY & LOGGING
-                    const predictedW = lastW + (lastF * (predictiveDelayMs / 1000));
+                    // --- PREDICTIVE LOGIC (REPLICATING C++) ---
+                    let predictedW = lastW;
+
+                    if (lastW > 0.1) {
+                        let currentRate = (lastVF !== undefined) ? lastVF : lastF;
+                        let predictedAdded = currentRate * (predictiveDelayMs / 1000.0);
+                        
+                        // C++ Clamp (0.0 - 8.0)
+                        if (predictedAdded < 0) predictedAdded = 0;
+                        if (predictedAdded > 8.0) predictedAdded = 8.0;
+
+                        predictedW = lastW + predictedAdded;
+                        console.log(`Phase ${phaseNum}: W=${lastW}, Rate=${currentRate}. Pred=${predictedW.toFixed(2)}`);
+                    } else {
+                        console.log(`Phase ${phaseNum}: Weight too low (${lastW}), skipping prediction.`);
+                    }
+                    
                     finalPredictedWeight = predictedW;
-                    console.log(`Phase ${phaseNum} End: Weight=${lastW}g, Flow=${lastF}ml/s. Predicted (+${predictiveDelayMs}ms) = ${predictedW.toFixed(2)}g`);
 
                     let hitTargets = [];
 
@@ -323,16 +339,15 @@ function analyzeShot(data, filename) {
                         if (tgt.operator === 'gte' && measured >= tgt.value) hit = true;
                         if (tgt.operator === 'lte' && measured <= tgt.value) hit = true;
 
-                        // --- PREDICTIVE CHECK ---
+                        // Check Prediction for Weight/Volumetric
                         if (!hit && (tgt.type === 'weight' || tgt.type === 'volumetric') && tgt.operator === 'gte') {
                             if (predictedW >= tgt.value) {
                                 hit = true;
                                 console.log(`  -> Hit via Prediction! (${predictedW.toFixed(2)} >= ${tgt.value})`);
-                            } else {
-                                console.log(`  -> Prediction Missed. (${predictedW.toFixed(2)} < ${tgt.value})`);
                             }
                         }
                         
+                        // Loose flow match for pre-infusion
                         if (!hit && tgt.type === 'flow' && tgt.operator === 'lte' && measured <= (tgt.value + 0.2)) {
                             hit = true;
                         }
@@ -355,9 +370,9 @@ function analyzeShot(data, filename) {
                         const bestMatch = hitTargets[0];
                         let icon = "🎯";
                         if(bestMatch.type === 'volumetric' || bestMatch.type === 'weight') icon = "⚖️";
-                        else if(bestMatch.type === 'pumped') icon = "💧"; 
-                        else if(bestMatch.type === 'flow') icon = "≋"; 
-                        else if(bestMatch.type === 'pressure') icon = "📉";
+                        else if(bestMatch.type === 'pumped') icon = "🚰"; 
+                        else if(bestMatch.type === 'flow') icon = "💧"; 
+                        else if(bestMatch.type === 'pressure') icon = "💨";
 
                         exitReasonBadge = `<br><span class="reason-badge reason-target">${icon} ${bestMatch.type}</span>`;
                         exitType = bestMatch.type;
@@ -391,6 +406,7 @@ function analyzeShot(data, filename) {
         tdPhase.innerHTML = tablePhaseHtml;
         tr.appendChild(tdPhase);
 
+        // --- BODY ROWS (USE LOCAL VARS) ---
         columnConfig.forEach(col => {
             const td = document.createElement('td');
             td.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
@@ -424,8 +440,8 @@ function analyzeShot(data, filename) {
                 case 'tf_avg': val = statTF.avg.toFixed(1); break;
                 case 'tt_se': val = `${statTT.start.toFixed(1)} / ${statTT.end.toFixed(1)}`; break;
                 case 'tt_mm': val = `${statTT.min.toFixed(1)} / ${statTT.max.toFixed(1)}`; break;
-                case 'tt_avg': val = statTT.avg.toFixed(1); break;
-                case 'sys_raw': val = (startSysInfo.raw !== undefined) ? startSysInfo.raw : "-"; break;
+                case 'tt_avg': val = statTT.avg.toFixed(1); break; // Correct: statTT
+                case 'sys_raw': val = (startSysInfo.raw !== undefined) ? startSysInfo.raw : "-"; break; // Correct: startSysInfo
                 case 'sys_shot_vol': val = (startSysInfo.shotStartedVolumetric !== undefined) ? getBool(startSysInfo.shotStartedVolumetric) : "-"; break;
                 case 'sys_curr_vol': val = (startSysInfo.currentlyVolumetric !== undefined) ? getBool(startSysInfo.currentlyVolumetric) : "-"; break;
                 case 'sys_scale': val = (startSysInfo.bluetoothScaleConnected !== undefined) ? getBool(startSysInfo.bluetoothScaleConnected) : "-"; break;
@@ -456,9 +472,7 @@ function analyzeShot(data, filename) {
                     val += ` <span class="${style}">/ ${tVal}</span>`;
                 }
                 
-                // --- VISUALIZE PREDICTION IN TABLE ---
-                // If we have a predicted value and this column is weight, show it.
-                if (col.id === 'weight' && finalPredictedWeight !== null) {
+                if (col.id === 'weight' && finalPredictedWeight !== null && weightVal > 0.1) {
                     val += `<br><small style="color:#7f8c8d; font-size:0.85em;">(🔮 ${finalPredictedWeight.toFixed(1)})</small>`;
                 }
             }
@@ -468,8 +482,8 @@ function analyzeShot(data, filename) {
         tableBody.appendChild(tr);
     });
 
-    // --- FOOTER ---
-    const gSamples = data.samples;
+    // --- FOOTER (GLOBAL STATS) ---
+    const gSamples = data.samples; // DEFINED HERE
     const gStatsP = getMetricStats(gSamples, 'cp');
     const gStatsTP = getMetricStats(gSamples, 'tp');
     const gStatsF = getMetricStats(gSamples, 'fl');
@@ -488,6 +502,7 @@ function analyzeShot(data, filename) {
     tdFootPhase.className = "phase-col"; tdFootPhase.innerText = "Total / Avg";
     trFoot.appendChild(tdFootPhase);
 
+    // --- FOOTER ROWS (USE GLOBAL VARS) ---
     columnConfig.forEach(col => {
         const td = document.createElement('td');
         td.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
@@ -519,8 +534,8 @@ function analyzeShot(data, filename) {
             case 'tf_avg': val = gStatsTF.avg.toFixed(1); break;
             case 'tt_se': val = `${gStatsTT.start.toFixed(1)} / ${gStatsTT.end.toFixed(1)}`; break;
             case 'tt_mm': val = `${gStatsTT.min.toFixed(1)} / ${gStatsTT.max.toFixed(1)}`; break;
-            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break;
-            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break;
+            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break; // Correct: gStatsTT
+            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break; // Correct: gSamples
             case 'sys_shot_vol': val = (gSamples[0].systemInfo?.shotStartedVolumetric !== undefined) ? ((gSamples[0].systemInfo.shotStartedVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_curr_vol': val = (gSamples[0].systemInfo?.currentlyVolumetric !== undefined) ? ((gSamples[0].systemInfo.currentlyVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_scale': val = (gSamples[0].systemInfo?.bluetoothScaleConnected !== undefined) ? ((gSamples[0].systemInfo.bluetoothScaleConnected) ? "Yes" : "No") : "-"; break;
