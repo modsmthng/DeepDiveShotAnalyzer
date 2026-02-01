@@ -6,8 +6,8 @@ by modsmthng
 
 **Simply download the project and open the index.html**
 
-<img width="1674" height="896" alt="SCR-20260201-qmem" src="https://github.com/user-attachments/assets/a9351392-621e-4d47-8bfa-c5c3b6f19a3b" />
 <img width="1673" height="694" alt="SCR-20260201-qlkw" src="https://github.com/user-attachments/assets/b069ca59-864c-4bb7-a682-2b9632abc3a1" />
+<img width="1658" height="920" alt="SCR-20260201-sdje" src="https://github.com/user-attachments/assets/fe871e83-5531-4730-81ba-2deaeff9c6de" />
 <img width="1679" height="673" alt="SCR-20260201-qmhh" src="https://github.com/user-attachments/assets/1f936fc2-624a-4797-83d4-9a784cad745a" />
 
 # DISCLAIMER
