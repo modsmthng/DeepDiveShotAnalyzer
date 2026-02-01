@@ -2,9 +2,9 @@
 Deep Dive Shot Analyzer
 (for GaggiMate)
 by modsmthng
-Used to develop Automatic Pro v3
+*Used to develop Automatic Pro v3*
 
-**Simply download the index.html file and open it.**
+**Simply download the project and open the index.html**
 
 
 <img width="1670" height="638" alt="SCR-20260131-pmvk" src="https://github.com/user-attachments/assets/a34a5584-fca6-42b3-aeca-04bec0a76235" />
