@@ -3,6 +3,8 @@ let myChart = null;
 let isInfoExpanded = false;
 let currentShotData = null;
 let currentProfileData = null;
+// Default setting for Auto-Sensor Delay
+let isSensorDelayAuto = true; 
 
 // --- DOM Elements ---
 let resultArea, fileInfoContainer, fileInfoText, extendedInfoContent, toggleBtn, controlsArea, controlsGrid, tableHead, tableBody, tableFoot, chartWrapper;
@@ -20,6 +22,7 @@ document.addEventListener('DOMContentLoaded', () => {
     tableFoot = document.getElementById('table-foot');
     chartWrapper = document.getElementById('chart-wrapper');
 
+    // Initialize drop zones
     setupDropZone('drop-zone-shot', 'file-shot', (data, name) => {
         currentShotData = data;
         document.getElementById('label-shot').innerText = name;
@@ -36,21 +39,41 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- Helper for Formatting Target Names ---
+// --- Helper: Format Target Names ---
 function formatTargetName(name) {
     if (!name) return "";
-    // Special mapping for weight
     if (name.toLowerCase() === "volumetric" || name.toLowerCase() === "weight") return "Weight";
     if (name.toLowerCase() === "pumped") return "Pumped";
     if (name.toLowerCase() === "duration") return "Time";
-    // Capitalize first letter for everything else
     return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
 }
 
-// --- Column Config ---
+// --- Helper: Generate Icon HTML ---
+function getIconHtml(iconName, isWhite = false) {
+    if (!iconName) return '';
+    const classString = isWhite ? 'ui-icon icon-white' : 'ui-icon';
+    return `<img src="ui/assets/${iconName}.svg" class="${classString}" alt="">`; 
+}
+
+// --- Helper: Get Icon Filename ---
+function getIconNameForMetric(id, group, type) {
+    if (id === 'duration' || type === 'duration') return 'clock';
+    if (id === 'weight' || group === 'weight_det' || type === 'weight' || type === 'volumetric') return 'equality';
+    if (id === 'water' || type === 'pumped') return 'flowmeter';
+    if (group && group.includes('pressure')) return 'tachometer';
+    if (type === 'pressure') return 'tachometer';
+    if (group && (group.includes('flow') || group === 'puckflow')) return 'flowmeter';
+    if (type === 'flow') return 'flowmeter';
+    if (group && group.includes('temp')) return 'thermometer-half';
+    if (type === 'temperature') return 'thermometer-half';
+    return null;
+}
+
+// --- Column Configuration ---
 const columnConfig = [
     { id: 'duration', label: 'Duration (s)', type: 'val', group: 'basics', default: true, targetType: 'duration' },
-    { id: 'water', label: 'Water (ml)', type: 'val', group: 'basics', default: true, targetType: 'pumped' },
+    // REQ: Renamed "Water" to "Water Drawn"
+    { id: 'water', label: 'Water Drawn (ml)', type: 'val', group: 'basics', default: true, targetType: 'pumped' },
     { id: 'weight', label: 'Weight (g)', type: 'val', group: 'basics', default: true, targetType: 'weight' }, 
     { id: 'p_se', label: 'Pressure', type: 'se', group: 'pressure', default: true, targetType: 'pressure' },
     { id: 'p_mm', label: 'Pressure', type: 'mm', group: 'pressure', default: false },
@@ -138,8 +161,7 @@ function checkAndAnalyze() {
 function renderControls() {
     controlsGrid.innerHTML = '';
 
-    // --- Analysis Settings (Predictive Delay) ---
-    // set to 0 or 800ms as standard
+    // --- Analysis Settings (Delays) ---
     let settingsDiv = document.getElementById('analysis-settings');
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
@@ -149,21 +171,48 @@ function renderControls() {
         settingsDiv.style.background = '#e8f6f3';
         settingsDiv.style.border = '1px solid #d1f2eb';
         settingsDiv.style.borderRadius = '6px';
+        
+        // Added Auto Checkbox logic
         settingsDiv.innerHTML = `
-            <div style="display: flex; align-items: center; gap: 15px;">
-                <h4 style="margin: 0; color: #16a085;">Analysis Settings</h4>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
+                <h4 style="margin: 0; color: #16a085; margin-right: 10px;">Stop Delays</h4>
+                
+                <div style="display: flex; align-items: center; gap: 5px;" title="Compensates for Bluetooth scale latency.">
+                    <label for="predictive-scale-delay" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">Scale (BT):</label>
+                    <input type="number" id="predictive-scale-delay" value="800" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
+                    <span style="font-size: 0.8em; color: #7f8c8d;">ms</span>
+                </div>
+
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <label for="predictive-delay-input" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">Predictive Scale Delay (ms):</label>
-                    <input type="number" id="predictive-delay-input" value="800" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
-                    (The recorded weight value may differ from the actual predictive scale delay value due to the time of recording.)
+                    <label for="predictive-sensor-delay" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">System/Sensor:</label>
+                    <input type="number" id="predictive-sensor-delay" value="200" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
+                    <span style="font-size: 0.8em; color: #7f8c8d;">ms</span>
+                    
+                    <div style="margin-left:8px; display:flex; align-items:center;">
+                        <input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''} style="cursor:pointer;">
+                        <label for="auto-sensor-delay" style="font-size:0.8em; margin-left:4px; color:#16a085; cursor:pointer; font-weight:bold;">Auto</label>
+                    </div>
                 </div>
             </div>
         `;
         controlsGrid.parentNode.insertBefore(settingsDiv, controlsGrid);
         
-        const input = document.getElementById('predictive-delay-input');
-        input.addEventListener('change', () => analyzeShot(currentShotData, document.getElementById('label-shot').innerText));
-        input.addEventListener('keydown', (e) => { if (e.key === 'Enter') input.blur(); });
+        const scaleInput = document.getElementById('predictive-scale-delay');
+        const sensorInput = document.getElementById('predictive-sensor-delay');
+        const autoCheck = document.getElementById('auto-sensor-delay');
+        
+        const triggerUpdate = () => analyzeShot(currentShotData, document.getElementById('label-shot').innerText);
+        
+        scaleInput.addEventListener('change', triggerUpdate);
+        sensorInput.addEventListener('change', triggerUpdate);
+        
+        autoCheck.addEventListener('change', (e) => {
+            isSensorDelayAuto = e.target.checked;
+            triggerUpdate();
+        });
+
+        scaleInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') scaleInput.blur(); });
+        sensorInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') sensorInput.blur(); });
     }
 
     const grouped = {};
@@ -183,9 +232,14 @@ function renderControls() {
             if (col.type === 'se') suffix = " Start / End";
             else if (col.type === 'mm') suffix = " [min / max]";
             else if (col.type === 'avg') suffix = " Avg (Time-Weighted)";
+            
+            const iconName = getIconNameForMetric(col.id, col.group, col.targetType);
+            const iconHtml = getIconHtml(iconName, false); 
+            
             let text = col.label;
             if (col.type !== 'val' && col.type !== 'bool') text += suffix; 
-            label.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''} onchange="toggleColumn('${col.id}')"> ${text}`;
+            
+            label.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''} onchange="toggleColumn('${col.id}')"> ${iconHtml}${text}`;
             groupDiv.appendChild(label);
         });
         controlsGrid.appendChild(groupDiv);
@@ -253,12 +307,110 @@ function analyzeShot(data, filename) {
     chartWrapper.style.display = 'block';
     if (!data.samples || data.samples.length === 0) { alert("No sample data found."); return; }
 
-    const delayInput = document.getElementById('predictive-delay-input');
-    const predictiveDelayMs = delayInput ? (parseFloat(delayInput.value) || 800) : 800; //0 or 800
-    console.log("--- START ANALYSIS: Predictive Delay = " + predictiveDelayMs + "ms ---");
+    const gSamples = data.samples; 
+    const globalStartTime = gSamples[0].t;
+    const startSysInfo = gSamples[0].systemInfo || {};
+    
+    // Mode & Scale check
+    const isBrewByWeight = startSysInfo.shotStartedVolumetric === true;
+    let globalScaleLost = false;
+    if (isBrewByWeight) {
+        globalScaleLost = gSamples.some(s => s.systemInfo && s.systemInfo.bluetoothScaleConnected === false);
+    }
+
+    // --- DELAY PREPARATION & AUTO LOGIC ---
+    const scaleDelayInput = document.getElementById('predictive-scale-delay');
+    const sensorDelayInput = document.getElementById('predictive-sensor-delay');
+    const scaleDelayMs = scaleDelayInput ? (parseFloat(scaleDelayInput.value) || 800) : 800;
+    const manualSensorDelayMs = sensorDelayInput ? (parseFloat(sensorDelayInput.value) || 200) : 200;
+
+    let usedSensorDelay = manualSensorDelayMs;
+    let wasAutoAdjusted = false;
+
+    // Phase setup for pre-scan
+    const phases = {};
+    const phaseNameMap = {};
+    if (data.phaseTransitions) { data.phaseTransitions.forEach(pt => phaseNameMap[pt.phaseNumber] = pt.phaseName); }
+    gSamples.forEach(sample => {
+        const pNum = sample.phaseNumber;
+        if (!phases[pNum]) phases[pNum] = [];
+        phases[pNum].push(sample);
+    });
+
+    // --- AUTO DELAY ADJUSTMENT ALGORITHM ---
+    if (isSensorDelayAuto && currentProfileData && currentProfileData.phases) {
+        const checkDelay = (delayVal) => {
+            let hitCount = 0;
+            Object.keys(phases).forEach(phaseNum => {
+                const samples = phases[phaseNum];
+                const rawName = phaseNameMap[phaseNum];
+                const cleanName = rawName ? rawName.trim().toLowerCase() : "";
+                const profilePhase = currentProfileData.phases.find(p => p.name.trim().toLowerCase() === cleanName);
+                if (profilePhase && profilePhase.targets) {
+                    let wPumped = 0;
+                    for (let i = 1; i < samples.length; i++) wPumped += samples[i].fl * ((samples[i].t - samples[i-1].t) / 1000);
+                    const lastS = samples[samples.length-1];
+                    const prevS = samples.length > 1 ? samples[samples.length-2] : lastS;
+                    const dt = (lastS.t - prevS.t) / 1000.0;
+                    
+                    let predPumped = wPumped; 
+                    if (lastS.fl > 0) predPumped += lastS.fl * (delayVal / 1000.0);
+                    
+                    let predP = lastS.cp; let predF = lastS.fl;
+                    if (dt > 0) {
+                        const slopeP = (lastS.cp - prevS.cp) / dt;
+                        const slopeF = (lastS.fl - prevS.fl) / dt;
+                        predP = lastS.cp + (slopeP * (delayVal / 1000.0));
+                        predF = lastS.fl + (slopeF * (delayVal / 1000.0));
+                    }
+
+                    for (let tgt of profilePhase.targets) {
+                        if (tgt.type === 'volumetric' || tgt.type === 'weight') continue;
+
+                        let measured = 0; let checkValue = 0; let hit = false;
+                        if (tgt.type === 'pressure') { measured = lastS.cp; checkValue = predP; }
+                        else if (tgt.type === 'flow') { measured = lastS.fl; checkValue = predF; }
+                        else if (tgt.type === 'pumped') { measured = wPumped; checkValue = predPumped; }
+
+                        if ((tgt.operator === 'gte' && (measured >= tgt.value || checkValue >= tgt.value)) ||
+                            (tgt.operator === 'lte' && (measured <= tgt.value || checkValue <= tgt.value))) {
+                            hit = true;
+                        }
+                        if (hit) { hitCount++; break; } 
+                    }
+                }
+            });
+            return hitCount;
+        };
+
+        const hitsNormal = checkDelay(manualSensorDelayMs);
+        const hitsHigh = checkDelay(800); 
+        
+        if (hitsHigh > hitsNormal) {
+            usedSensorDelay = 800;
+            wasAutoAdjusted = true;
+            console.log("Auto-Adjusted Sensor Delay to 800ms");
+        }
+    }
+
+    console.log(`--- ANALYSIS: ScaleDelay=${scaleDelayMs}ms, SensorDelay=${usedSensorDelay}ms (Auto=${wasAutoAdjusted}) ---`);
+
+    // --- HEADER GENERATION ---
+    let modeLabel = isBrewByWeight 
+        ? `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#e8f8f5; color:#16a085; font-size:0.8em; border:1px solid #a3e4d7;">${getIconHtml('equality')} Brew by Weight</span>` 
+        : `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#f4f6f7; color:#7f8c8d; font-size:0.8em; border:1px solid #bdc3c7;">${getIconHtml('clock')} Brew by Time</span>`;
+
+    if (isBrewByWeight && globalScaleLost) {
+        modeLabel += `<br><span style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#fadbd8; color:#c0392b; font-size:0.8em; border:1px solid #e6b0aa; font-weight:bold;">⚠️ Scale Lost</span>`;
+    }
+
+    if (wasAutoAdjusted) {
+        modeLabel += `<br><span style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#d6eaf8; color:#2980b9; font-size:0.8em; border:1px solid #a9cce3; font-weight:bold;">ℹ️ Auto-Adj. Delay: 800ms</span>`;
+    }
 
     let trHead = document.createElement('tr');
-    trHead.innerHTML = `<th class="phase-col">Phase</th>`;
+    trHead.innerHTML = `<th class="phase-col">Phase<br>${modeLabel}</th>`;
+    
     columnConfig.forEach(col => {
         const th = document.createElement('th');
         th.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
@@ -266,22 +418,21 @@ function analyzeShot(data, filename) {
         if (col.type === 'se') sub = "Start / End";
         else if (col.type === 'mm') sub = "[min / max]";
         else if (col.type === 'avg') sub = "Avg (Time-Weighted)";
-        th.innerHTML = col.label + (sub ? `<br><small>${sub}</small>` : "");
+        
+        const iconName = getIconNameForMetric(col.id, col.group, col.targetType);
+        const iconHtml = getIconHtml(iconName, true);
+        
+        th.innerHTML = iconHtml + col.label + (sub ? `<br><small>${sub}</small>` : "");
         trHead.appendChild(th);
     });
     tableHead.appendChild(trHead);
 
-    const phaseNameMap = {};
-    if (data.phaseTransitions) { data.phaseTransitions.forEach(pt => phaseNameMap[pt.phaseNumber] = pt.phaseName); }
-    const phases = {};
-    const globalStartTime = data.samples[0].t;
-    data.samples.forEach(sample => {
-        const pNum = sample.phaseNumber;
-        if (!phases[pNum]) phases[pNum] = [];
-        phases[pNum].push(sample);
-    });
     const phaseBoundaries = [];
+    const TOL_PRESSURE = 0.15; 
+    const TOL_FLOW = 0.3; 
+    let scaleConnectionBrokenPermanently = false;
 
+    // --- PROCESS ROWS ---
     Object.keys(phases).sort((a,b) => a - b).forEach(phaseNum => {
         const samples = phases[phaseNum];
         const pStart = (samples[0].t - globalStartTime) / 1000;
@@ -289,7 +440,12 @@ function analyzeShot(data, filename) {
         const duration = pEnd - pStart;
         const rawName = phaseNameMap[phaseNum];
         const displayName = rawName ? rawName : `Phase ${phaseNum}`;
-        const startSysInfo = samples[0].systemInfo || {};
+
+        let scaleLostInThisPhase = false;
+        if (isBrewByWeight) {
+            scaleLostInThisPhase = samples.some(s => s.systemInfo && s.systemInfo.bluetoothScaleConnected === false);
+        }
+        if (scaleLostInThisPhase) scaleConnectionBrokenPermanently = true;
 
         let exitReasonBadge = "";
         let exitType = ""; 
@@ -302,58 +458,84 @@ function analyzeShot(data, filename) {
             
             if (profilePhase) {
                 const profDur = profilePhase.duration;
-                // Time Check
                 if (Math.abs(duration - profDur) < 0.5 || duration >= profDur) {
-                    exitReasonBadge = `<br><span class="reason-badge reason-time">⏱️ Time Limit</span>`;
+                    exitReasonBadge = `<br><span class="reason-badge reason-time">${getIconHtml('clock', true)} Time Limit</span>`;
                     exitType = "duration";
                 }
                 
-                // --- TARGET LOGIC ---
                 if (profilePhase.targets && (!exitType || duration < (profDur - 0.5))) {
                     let wPumped = 0;
                     for (let i = 1; i < samples.length; i++) wPumped += samples[i].fl * ((samples[i].t - samples[i-1].t) / 1000);
                     
-                    const lastP = samples[samples.length-1].cp;
-                    const lastF = samples[samples.length-1].fl; // Pump flow
-                    const lastW = samples[samples.length-1].v;  // Cup weight
-                    const lastVF = samples[samples.length-1].vf; // Volumetric flow (Scale flow)
+                    const lastSample = samples[samples.length-1];
+                    const prevSample = samples.length > 1 ? samples[samples.length-2] : lastSample;
+                    const dt = (lastSample.t - prevSample.t) / 1000.0;
+                    const lastP = lastSample.cp; const lastF = lastSample.fl; const lastW = lastSample.v; const lastVF = lastSample.vf; 
                     
-                    // --- PREDICTIVE LOGIC ---
+                    // Look Ahead Prep
+                    let nextPhaseFirstSample = null;
+                    const nextPNum = parseInt(phaseNum) + 1;
+                    if (phases[nextPNum] && phases[nextPNum].length > 0) {
+                        nextPhaseFirstSample = phases[nextPNum][0];
+                    }
+
+                    // Predictive Calculation
                     let predictedW = lastW;
-
-                    if (lastW > 0.1) {
+                    if (lastW > 0.1 && !scaleConnectionBrokenPermanently) {
                         let currentRate = (lastVF !== undefined) ? lastVF : lastF;
-                        let predictedAdded = currentRate * (predictiveDelayMs / 500.0); //or 1000
-                        
-                        if (predictedAdded < 0) predictedAdded = 0;
-                        if (predictedAdded > 8.0) predictedAdded = 8.0;
-
+                        let predictedAdded = currentRate * (scaleDelayMs / 500.0); 
+                        if (predictedAdded < 0) predictedAdded = 0; if (predictedAdded > 8.0) predictedAdded = 8.0;
                         predictedW = lastW + predictedAdded;
                     }
-                    
                     finalPredictedWeight = predictedW;
 
+                    let predictedPumped = wPumped; 
+                    if (lastF > 0) predictedPumped += lastF * (usedSensorDelay / 1000.0);
+
+                    let predictedP = lastP; let predictedF = lastF;
+                    if (dt > 0) {
+                        const slopeP = (lastP - prevSample.cp) / dt;
+                        const slopeF = (lastF - prevSample.fl) / dt;
+                        predictedP = lastP + (slopeP * (usedSensorDelay / 1000.0));
+                        predictedF = lastF + (slopeF * (usedSensorDelay / 1000.0));
+                    }
+
                     let hitTargets = [];
-
                     for (let tgt of profilePhase.targets) {
-                        let measured = 0; 
-                        let hit = false;
-                        
-                        if (tgt.type === 'pressure') measured = lastP;
-                        else if (tgt.type === 'flow') measured = lastF;
-                        else if (tgt.type === 'volumetric') measured = lastW; 
-                        else if (tgt.type === 'weight') measured = lastW;
-                        else if (tgt.type === 'pumped') measured = wPumped;
+                        if ((tgt.type === 'volumetric' || tgt.type === 'weight') && scaleConnectionBrokenPermanently) continue;
 
+                        let measured = 0; let checkValue = 0; let hit = false;
+                        let tolerance = 0;
+
+                        if (tgt.type === 'pressure') { measured = lastP; checkValue = (tgt.operator === 'gte' || tgt.operator === 'lte') ? predictedP : lastP; tolerance = TOL_PRESSURE; }
+                        else if (tgt.type === 'flow') { measured = lastF; checkValue = (tgt.operator === 'gte' || tgt.operator === 'lte') ? predictedF : lastF; tolerance = TOL_FLOW; }
+                        else if (tgt.type === 'volumetric' || tgt.type === 'weight') { measured = lastW; checkValue = (tgt.operator === 'gte') ? predictedW : lastW; }
+                        else if (tgt.type === 'pumped') { measured = wPumped; checkValue = (tgt.operator === 'gte') ? predictedPumped : wPumped; }
+
+                        // 1. Direct Hit
                         if (tgt.operator === 'gte' && measured >= tgt.value) hit = true;
                         if (tgt.operator === 'lte' && measured <= tgt.value) hit = true;
-
-                        if (!hit && (tgt.type === 'weight' || tgt.type === 'volumetric') && tgt.operator === 'gte') {
-                            if (predictedW >= tgt.value) hit = true;
-                        }
                         
-                        if (!hit && tgt.type === 'flow' && tgt.operator === 'lte' && measured <= (tgt.value + 0.2)) {
-                            hit = true;
+                        // 2. Predictive Hit
+                        if (!hit) {
+                             if (tgt.operator === 'gte' && checkValue >= tgt.value) hit = true;
+                             if (tgt.operator === 'lte' && checkValue <= tgt.value) hit = true;
+                        }
+
+                        // 3. Tolerance Hit
+                        if (!hit && tolerance > 0) {
+                            if (tgt.operator === 'gte' && measured >= tgt.value - tolerance) hit = true;
+                            if (tgt.operator === 'lte' && measured <= tgt.value + tolerance) hit = true;
+                        }
+
+                        // 4. Next Phase Lookahead
+                        if (!hit && nextPhaseFirstSample) {
+                            if (tgt.type === 'pressure') { 
+                                if (tgt.operator === 'gte' && nextPhaseFirstSample.cp >= tgt.value) hit = true; 
+                            } 
+                            else if (tgt.type === 'flow') { 
+                                if (tgt.operator === 'gte' && nextPhaseFirstSample.fl >= tgt.value) hit = true; 
+                            }
                         }
 
                         if (hit) hitTargets.push(tgt);
@@ -372,14 +554,11 @@ function analyzeShot(data, filename) {
                         });
 
                         const bestMatch = hitTargets[0];
-                        let icon = "🎯";
-                        if(bestMatch.type === 'volumetric' || bestMatch.type === 'weight') icon = "⚖️";
-                        else if(bestMatch.type === 'pumped') icon = "🚰"; 
-                        else if(bestMatch.type === 'flow') icon = "💧"; 
-                        else if(bestMatch.type === 'pressure') icon = "💨";
+                        let iconName = getIconNameForMetric('target', null, bestMatch.type);
+                        if (!iconName) iconName = 'equality'; 
+                        let imgTag = getIconHtml(iconName, true);
 
-                        // FIX: Added formatTargetName() call here
-                        exitReasonBadge = `<br><span class="reason-badge reason-target">${icon} ${formatTargetName(bestMatch.type)}</span>`;
+                        exitReasonBadge = `<br><span class="reason-badge reason-target">${imgTag} ${formatTargetName(bestMatch.type)}</span>`;
                         exitType = bestMatch.type;
                     }
                 }
@@ -415,8 +594,6 @@ function analyzeShot(data, filename) {
             const td = document.createElement('td');
             td.className = `col-${col.id} group-${col.group} ${col.default ? '' : 'hidden-col'}`;
             let val = "-";
-            const getBool = (v) => v ? "Yes" : "No";
-
             switch(col.id) {
                 case 'duration': val = duration.toFixed(1); break;
                 case 'water': val = waterPumped.toFixed(1); break;
@@ -433,6 +610,9 @@ function analyzeShot(data, filename) {
                 case 't_se': val = `${statT.start.toFixed(1)} / ${statT.end.toFixed(1)}`; break;
                 case 't_mm': val = `${statT.min.toFixed(1)} / ${statT.max.toFixed(1)}`; break;
                 case 't_avg': val = statT.avg.toFixed(1); break;
+                case 'tt_se': val = `${statTT.start.toFixed(1)} / ${statTT.end.toFixed(1)}`; break;
+                case 'tt_mm': val = `${statTT.min.toFixed(1)} / ${statTT.max.toFixed(1)}`; break;
+                case 'tt_avg': val = statTT.avg.toFixed(1); break; 
                 case 'w_se': val = `${statW.start.toFixed(1)} / ${statW.end.toFixed(1)}`; break;
                 case 'w_mm': val = `${statW.min.toFixed(1)} / ${statW.max.toFixed(1)}`; break;
                 case 'w_avg': val = statW.avg.toFixed(1); break;
@@ -442,15 +622,16 @@ function analyzeShot(data, filename) {
                 case 'tf_se': val = `${statTF.start.toFixed(1)} / ${statTF.end.toFixed(1)}`; break;
                 case 'tf_mm': val = `${statTF.min.toFixed(1)} / ${statTF.max.toFixed(1)}`; break;
                 case 'tf_avg': val = statTF.avg.toFixed(1); break;
-                case 'tt_se': val = `${statTT.start.toFixed(1)} / ${statTT.end.toFixed(1)}`; break;
-                case 'tt_mm': val = `${statTT.min.toFixed(1)} / ${statTT.max.toFixed(1)}`; break;
-                case 'tt_avg': val = statTT.avg.toFixed(1); break; 
-                case 'sys_raw': val = (startSysInfo.raw !== undefined) ? startSysInfo.raw : "-"; break;
-                case 'sys_shot_vol': val = (startSysInfo.shotStartedVolumetric !== undefined) ? getBool(startSysInfo.shotStartedVolumetric) : "-"; break;
-                case 'sys_curr_vol': val = (startSysInfo.currentlyVolumetric !== undefined) ? getBool(startSysInfo.currentlyVolumetric) : "-"; break;
-                case 'sys_scale': val = (startSysInfo.bluetoothScaleConnected !== undefined) ? getBool(startSysInfo.bluetoothScaleConnected) : "-"; break;
-                case 'sys_vol_avail': val = (startSysInfo.volumetricAvailable !== undefined) ? getBool(startSysInfo.volumetricAvailable) : "-"; break;
-                case 'sys_ext': val = (startSysInfo.extendedRecording !== undefined) ? getBool(startSysInfo.extendedRecording) : "-"; break;
+                case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break; 
+                case 'sys_shot_vol': val = (gSamples[0].systemInfo?.shotStartedVolumetric !== undefined) ? ((gSamples[0].systemInfo.shotStartedVolumetric) ? "Yes" : "No") : "-"; break;
+                case 'sys_curr_vol': val = (gSamples[0].systemInfo?.currentlyVolumetric !== undefined) ? ((gSamples[0].systemInfo.currentlyVolumetric) ? "Yes" : "No") : "-"; break;
+                case 'sys_scale': val = (gSamples[0].systemInfo?.bluetoothScaleConnected !== undefined) ? ((gSamples[0].systemInfo.bluetoothScaleConnected) ? "Yes" : "No") : "-"; break;
+                case 'sys_vol_avail': val = (gSamples[0].systemInfo?.volumetricAvailable !== undefined) ? ((gSamples[0].systemInfo.volumetricAvailable) ? "Yes" : "No") : "-"; break;
+                case 'sys_ext': val = (gSamples[0].systemInfo?.extendedRecording !== undefined) ? ((gSamples[0].systemInfo.extendedRecording) ? "Yes" : "No") : "-"; break;
+            }
+
+            if (col.id === 'weight' && scaleConnectionBrokenPermanently) {
+                val = `<span style="font-weight:bold; color:#c0392b; border-bottom:1px dashed #c0392b;">${val}</span><br><span style="font-size:0.8em; color:#e74c3c;">⚠️ Scale Lost</span>`;
             }
 
             if (profilePhase && col.targetType) {
@@ -471,11 +652,10 @@ function analyzeShot(data, filename) {
                 if (tVal) {
                     if (exitType === 'volumetric' && col.id === 'weight') isTrigger = true;
                     const style = isTrigger ? "trigger-hit" : "val-target";
-                    // FIX: formatTargetName() also used for table labels
                     val += ` <span class="${style}">/ ${tVal}</span>`;
                 }
                 
-                if (col.id === 'weight' && finalPredictedWeight !== null && weightVal > 0.1) {
+                if (col.id === 'weight' && finalPredictedWeight !== null && weightVal > 0.1 && !scaleConnectionBrokenPermanently) {
                     val += `<br><small style="color:#7f8c8d; font-size:0.85em;">(🔮 ${finalPredictedWeight.toFixed(1)})</small>`;
                 }
             }
@@ -485,19 +665,13 @@ function analyzeShot(data, filename) {
         tableBody.appendChild(tr);
     });
 
-    // --- FOOTER (GLOBAL STATS) ---
-    const gSamples = data.samples;
-    const gStatsP = getMetricStats(gSamples, 'cp');
-    const gStatsTP = getMetricStats(gSamples, 'tp');
-    const gStatsF = getMetricStats(gSamples, 'fl');
-    const gStatsPF = getMetricStats(gSamples, 'pf');
-    const gStatsTF = getMetricStats(gSamples, 'tf');
-    const gStatsT = getMetricStats(gSamples, 'ct');
-    const gStatsTT = getMetricStats(gSamples, 'tt');
-    const gStatsW = getMetricStats(gSamples, 'v');
+    // --- FOOTER ---
+    const gStatsP = getMetricStats(gSamples, 'cp'); const gStatsTP = getMetricStats(gSamples, 'tp');
+    const gStatsF = getMetricStats(gSamples, 'fl'); const gStatsPF = getMetricStats(gSamples, 'pf');
+    const gStatsTF = getMetricStats(gSamples, 'tf'); const gStatsT = getMetricStats(gSamples, 'ct');
+    const gStatsTT = getMetricStats(gSamples, 'tt'); const gStatsW = getMetricStats(gSamples, 'v');
     let gDuration = (gSamples[gSamples.length-1].t - gSamples[0].t) / 1000;
-    let gWater = 0;
-    for (let i = 1; i < gSamples.length; i++) gWater += gSamples[i].fl * ((gSamples[i].t - gSamples[i-1].t) / 1000);
+    let gWater = 0; for (let i = 1; i < gSamples.length; i++) gWater += gSamples[i].fl * ((gSamples[i].t - gSamples[i-1].t) / 1000);
     let gWeight = gSamples[gSamples.length-1].v;
 
     const trFoot = document.createElement('tr');
@@ -525,6 +699,10 @@ function analyzeShot(data, filename) {
             case 't_se': val = `${gStatsT.start.toFixed(1)} / ${gStatsT.end.toFixed(1)}`; break;
             case 't_mm': val = `${gStatsT.min.toFixed(1)} / ${gStatsT.max.toFixed(1)}`; break;
             case 't_avg': val = gStatsT.avg.toFixed(1); break;
+            // FIX: Use gStatsTT here, NOT statTT
+            case 'tt_se': val = `${gStatsTT.start.toFixed(1)} / ${gStatsTT.end.toFixed(1)}`; break;
+            case 'tt_mm': val = `${gStatsTT.min.toFixed(1)} / ${gStatsTT.max.toFixed(1)}`; break;
+            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break; 
             case 'w_se': val = `${gStatsW.start.toFixed(1)} / ${gStatsW.end.toFixed(1)}`; break;
             case 'w_mm': val = `${gStatsW.min.toFixed(1)} / ${gStatsW.max.toFixed(1)}`; break;
             case 'w_avg': val = gStatsW.avg.toFixed(1); break;
@@ -534,10 +712,7 @@ function analyzeShot(data, filename) {
             case 'tf_se': val = `${gStatsTF.start.toFixed(1)} / ${gStatsTF.end.toFixed(1)}`; break;
             case 'tf_mm': val = `${gStatsTF.min.toFixed(1)} / ${gStatsTF.max.toFixed(1)}`; break;
             case 'tf_avg': val = gStatsTF.avg.toFixed(1); break;
-            case 'tt_se': val = `${gStatsTT.start.toFixed(1)} / ${gStatsTT.end.toFixed(1)}`; break;
-            case 'tt_mm': val = `${gStatsTT.min.toFixed(1)} / ${gStatsTT.max.toFixed(1)}`; break;
-            case 'tt_avg': val = gStatsTT.avg.toFixed(1); break;
-            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break;
+            case 'sys_raw': val = gSamples[0].systemInfo?.raw ?? "-"; break; 
             case 'sys_shot_vol': val = (gSamples[0].systemInfo?.shotStartedVolumetric !== undefined) ? ((gSamples[0].systemInfo.shotStartedVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_curr_vol': val = (gSamples[0].systemInfo?.currentlyVolumetric !== undefined) ? ((gSamples[0].systemInfo.currentlyVolumetric) ? "Yes" : "No") : "-"; break;
             case 'sys_scale': val = (gSamples[0].systemInfo?.bluetoothScaleConnected !== undefined) ? ((gSamples[0].systemInfo.bluetoothScaleConnected) ? "Yes" : "No") : "-"; break;
