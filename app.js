@@ -139,6 +139,7 @@ function renderControls() {
     controlsGrid.innerHTML = '';
 
     // --- Analysis Settings (Predictive Delay) ---
+    // set to 0 or 800ms as standard
     let settingsDiv = document.getElementById('analysis-settings');
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
@@ -154,6 +155,7 @@ function renderControls() {
                 <div style="display: flex; align-items: center; gap: 5px;">
                     <label for="predictive-delay-input" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">Predictive Scale Delay (ms):</label>
                     <input type="number" id="predictive-delay-input" value="800" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
+                    (The recorded weight value may differ from the actual predictive scale delay value due to the time of recording.)
                 </div>
             </div>
         `;
@@ -252,7 +254,7 @@ function analyzeShot(data, filename) {
     if (!data.samples || data.samples.length === 0) { alert("No sample data found."); return; }
 
     const delayInput = document.getElementById('predictive-delay-input');
-    const predictiveDelayMs = delayInput ? (parseFloat(delayInput.value) || 800) : 800;
+    const predictiveDelayMs = delayInput ? (parseFloat(delayInput.value) || 800) : 800; //0 or 800
     console.log("--- START ANALYSIS: Predictive Delay = " + predictiveDelayMs + "ms ---");
 
     let trHead = document.createElement('tr');
