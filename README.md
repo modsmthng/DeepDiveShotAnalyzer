@@ -6,9 +6,11 @@ by modsmthng
 
 **Simply download the project and open the index.html**
 
-<img width="1673" height="694" alt="SCR-20260201-qlkw" src="https://github.com/user-attachments/assets/b069ca59-864c-4bb7-a682-2b9632abc3a1" />
-<img width="1658" height="920" alt="SCR-20260201-sdje" src="https://github.com/user-attachments/assets/fe871e83-5531-4730-81ba-2deaeff9c6de" />
-<img width="1679" height="673" alt="SCR-20260201-qmhh" src="https://github.com/user-attachments/assets/1f936fc2-624a-4797-83d4-9a784cad745a" />
+<img width="1669" height="664" alt="SCR-20260202-tqvy" src="https://github.com/user-attachments/assets/de3788dd-b5fa-41a6-a7e5-f90ca348e0b3" />
+<img width="1663" height="939" alt="SCR-20260202-tqtc" src="https://github.com/user-attachments/assets/9bddedb1-0acb-45de-8636-e6c8b3e19e81" />
+<img width="1670" height="519" alt="SCR-20260202-tqrc" src="https://github.com/user-attachments/assets/7924da73-826c-46d8-beeb-e2016bb55096" />
+<img width="1684" height="458" alt="SCR-20260202-tqlh" src="https://github.com/user-attachments/assets/3d470389-cb16-4c9b-a4a1-75cfac951082" />
+
 
 # DISCLAIMER
 The code has been optimized and commented using AI.
