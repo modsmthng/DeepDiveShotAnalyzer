@@ -10,6 +10,16 @@ let isSensorDelayAuto = true;
 let resultArea, fileInfoContainer, fileInfoText, extendedInfoContent, toggleBtn, controlsArea, controlsGrid, tableHead, tableBody, tableFoot, chartWrapper;
 
 document.addEventListener('DOMContentLoaded', () => {
+    // --- 1. CSS Injection for Subtle Table Borders ---
+    const style = document.createElement('style');
+    style.innerHTML = `
+        table { border-collapse: collapse; width: 100%; }
+        th, td { border: 1px solid #e0e0e0; }
+        thead th { border-bottom: 2px solid #bdc3c7; }
+        .phase-col { border-right: 2px solid #bdc3c7; background-color: #fcfcfc; }
+    `;
+    document.head.appendChild(style);
+
     resultArea = document.getElementById('result-area');
     fileInfoContainer = document.getElementById('file-info-container');
     fileInfoText = document.getElementById('file-info-text');
@@ -39,40 +49,25 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 });
 
-// --- Helper: Format Target Names ---
-function formatTargetName(name) {
-    if (!name) return "";
-    if (name.toLowerCase() === "volumetric" || name.toLowerCase() === "weight") return "Weight";
-    if (name.toLowerCase() === "pumped") return "Pumped";
-    if (name.toLowerCase() === "duration") return "Time";
-    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
-}
-
-// --- Helper: Generate Icon HTML ---
-function getIconHtml(iconName, isWhite = false) {
-    if (!iconName) return '';
-    const classString = isWhite ? 'ui-icon icon-white' : 'ui-icon';
-    return `<img src="ui/assets/${iconName}.svg" class="${classString}" alt="">`; 
-}
-
-// --- Helper: Get Icon Filename ---
-function getIconNameForMetric(id, group, type) {
-    if (id === 'duration' || type === 'duration') return 'clock';
-    if (id === 'weight' || group === 'weight_det' || type === 'weight' || type === 'volumetric') return 'equality';
-    if (id === 'water' || type === 'pumped') return 'flowmeter';
-    if (group && group.includes('pressure')) return 'tachometer';
-    if (type === 'pressure') return 'tachometer';
-    if (group && (group.includes('flow') || group === 'puckflow')) return 'flowmeter';
-    if (type === 'flow') return 'flowmeter';
-    if (group && group.includes('temp')) return 'thermometer-half';
-    if (type === 'temperature') return 'thermometer-half';
-    return null;
+// --- Helper: Format Stop Reasons (Professional Naming) ---
+function formatStopReason(type) {
+    if (!type) return "";
+    const t = type.toLowerCase();
+    
+    // Explicit Professional Mapping
+    if (t === "duration") return "Time Limit";
+    if (t === "pumped") return "Water Drawn Limit";
+    if (t === "volumetric" || t === "weight") return "Weight Limit";
+    if (t === "pressure") return "Pressure Limit";
+    if (t === "flow") return "Flow Limit";
+    
+    // Fallback Capitalization
+    return t.charAt(0).toUpperCase() + t.slice(1) + " Limit";
 }
 
 // --- Column Configuration ---
 const columnConfig = [
     { id: 'duration', label: 'Duration (s)', type: 'val', group: 'basics', default: true, targetType: 'duration' },
-    // REQ: Renamed "Water" to "Water Drawn"
     { id: 'water', label: 'Water Drawn (ml)', type: 'val', group: 'basics', default: true, targetType: 'pumped' },
     { id: 'weight', label: 'Weight (g)', type: 'val', group: 'basics', default: true, targetType: 'weight' }, 
     { id: 'p_se', label: 'Pressure', type: 'se', group: 'pressure', default: true, targetType: 'pressure' },
@@ -172,7 +167,6 @@ function renderControls() {
         settingsDiv.style.border = '1px solid #d1f2eb';
         settingsDiv.style.borderRadius = '6px';
         
-        // Added Auto Checkbox logic
         settingsDiv.innerHTML = `
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
                 <h4 style="margin: 0; color: #16a085; margin-right: 10px;">Stop Delays</h4>
@@ -203,11 +197,29 @@ function renderControls() {
         
         const triggerUpdate = () => analyzeShot(currentShotData, document.getElementById('label-shot').innerText);
         
+        // --- 2. Logic for Auto-Disable Input ---
+        const updateInputState = () => {
+            if (isSensorDelayAuto) {
+                sensorInput.disabled = true;
+                sensorInput.style.backgroundColor = '#f0f0f0';
+                sensorInput.style.color = '#999';
+            } else {
+                sensorInput.disabled = false;
+                sensorInput.style.backgroundColor = 'white';
+                sensorInput.style.color = 'black';
+            }
+        };
+
+        // Initialize state
+        updateInputState();
+
         scaleInput.addEventListener('change', triggerUpdate);
+        
         sensorInput.addEventListener('change', triggerUpdate);
         
         autoCheck.addEventListener('change', (e) => {
             isSensorDelayAuto = e.target.checked;
+            updateInputState();
             triggerUpdate();
         });
 
@@ -233,13 +245,10 @@ function renderControls() {
             else if (col.type === 'mm') suffix = " [min / max]";
             else if (col.type === 'avg') suffix = " Avg (Time-Weighted)";
             
-            const iconName = getIconNameForMetric(col.id, col.group, col.targetType);
-            const iconHtml = getIconHtml(iconName, false); 
-            
             let text = col.label;
             if (col.type !== 'val' && col.type !== 'bool') text += suffix; 
             
-            label.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''} onchange="toggleColumn('${col.id}')"> ${iconHtml}${text}`;
+            label.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''} onchange="toggleColumn('${col.id}')"> ${text}`;
             groupDiv.appendChild(label);
         });
         controlsGrid.appendChild(groupDiv);
@@ -395,17 +404,18 @@ function analyzeShot(data, filename) {
 
     console.log(`--- ANALYSIS: ScaleDelay=${scaleDelayMs}ms, SensorDelay=${usedSensorDelay}ms (Auto=${wasAutoAdjusted}) ---`);
 
-    // --- HEADER GENERATION ---
+    // --- HEADER GENERATION (Clean No-Icon) ---
+    // --- 3. REQ: Removed Warning Icon ⚠️ ---
     let modeLabel = isBrewByWeight 
-        ? `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#e8f8f5; color:#16a085; font-size:0.8em; border:1px solid #a3e4d7;">${getIconHtml('equality')} Brew by Weight</span>` 
-        : `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#f4f6f7; color:#7f8c8d; font-size:0.8em; border:1px solid #bdc3c7;">${getIconHtml('clock')} Brew by Time</span>`;
+        ? `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#e8f8f5; color:#16a085; font-size:0.8em; border:1px solid #a3e4d7;">Brew by Weight</span>` 
+        : `<span style="display:inline-block; margin-top:4px; padding:2px 6px; border-radius:4px; background:#f4f6f7; color:#7f8c8d; font-size:0.8em; border:1px solid #bdc3c7;">Brew by Time</span>`;
 
     if (isBrewByWeight && globalScaleLost) {
-        modeLabel += `<br><span style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#fadbd8; color:#c0392b; font-size:0.8em; border:1px solid #e6b0aa; font-weight:bold;">⚠️ Scale Lost</span>`;
+        modeLabel += `<br><span style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#fadbd8; color:#c0392b; font-size:0.8em; border:1px solid #e6b0aa; font-weight:bold;">Scale Lost</span>`;
     }
 
     if (wasAutoAdjusted) {
-        modeLabel += `<br><span style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#d6eaf8; color:#2980b9; font-size:0.8em; border:1px solid #a9cce3; font-weight:bold;">ℹ️ Auto-Adj. Delay: 800ms</span>`;
+        modeLabel += `<br><span title="System delay adjusted to 800ms for analysis" style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#d6eaf8; color:#2980b9; font-size:0.8em; border:1px solid #a9cce3; font-weight:bold; cursor:help;">Auto-Adjust Active</span>`;
     }
 
     let trHead = document.createElement('tr');
@@ -419,10 +429,7 @@ function analyzeShot(data, filename) {
         else if (col.type === 'mm') sub = "[min / max]";
         else if (col.type === 'avg') sub = "Avg (Time-Weighted)";
         
-        const iconName = getIconNameForMetric(col.id, col.group, col.targetType);
-        const iconHtml = getIconHtml(iconName, true);
-        
-        th.innerHTML = iconHtml + col.label + (sub ? `<br><small>${sub}</small>` : "");
+        th.innerHTML = col.label + (sub ? `<br><small>${sub}</small>` : "");
         trHead.appendChild(th);
     });
     tableHead.appendChild(trHead);
@@ -459,7 +466,7 @@ function analyzeShot(data, filename) {
             if (profilePhase) {
                 const profDur = profilePhase.duration;
                 if (Math.abs(duration - profDur) < 0.5 || duration >= profDur) {
-                    exitReasonBadge = `<br><span class="reason-badge reason-time">${getIconHtml('clock', true)} Time Limit</span>`;
+                    exitReasonBadge = `<br><span class="reason-badge reason-time">Time Limit</span>`;
                     exitType = "duration";
                 }
                 
@@ -554,11 +561,10 @@ function analyzeShot(data, filename) {
                         });
 
                         const bestMatch = hitTargets[0];
-                        let iconName = getIconNameForMetric('target', null, bestMatch.type);
-                        if (!iconName) iconName = 'equality'; 
-                        let imgTag = getIconHtml(iconName, true);
+                        // NEW: Naming
+                        const reasonText = formatStopReason(bestMatch.type);
 
-                        exitReasonBadge = `<br><span class="reason-badge reason-target">${imgTag} ${formatTargetName(bestMatch.type)}</span>`;
+                        exitReasonBadge = `<br><span class="reason-badge reason-target">${reasonText}</span>`;
                         exitType = bestMatch.type;
                     }
                 }
@@ -630,8 +636,9 @@ function analyzeShot(data, filename) {
                 case 'sys_ext': val = (gSamples[0].systemInfo?.extendedRecording !== undefined) ? ((gSamples[0].systemInfo.extendedRecording) ? "Yes" : "No") : "-"; break;
             }
 
+            // --- 3. REQ: Removed Warning Icon ⚠️ ---
             if (col.id === 'weight' && scaleConnectionBrokenPermanently) {
-                val = `<span style="font-weight:bold; color:#c0392b; border-bottom:1px dashed #c0392b;">${val}</span><br><span style="font-size:0.8em; color:#e74c3c;">⚠️ Scale Lost</span>`;
+                val = `<span style="font-weight:bold; color:#c0392b; border-bottom:1px dashed #c0392b;">${val}</span><br><span style="font-size:0.8em; color:#e74c3c;">Scale Lost</span>`;
             }
 
             if (profilePhase && col.targetType) {
@@ -656,7 +663,7 @@ function analyzeShot(data, filename) {
                 }
                 
                 if (col.id === 'weight' && finalPredictedWeight !== null && weightVal > 0.1 && !scaleConnectionBrokenPermanently) {
-                    val += `<br><small style="color:#7f8c8d; font-size:0.85em;">(🔮 ${finalPredictedWeight.toFixed(1)})</small>`;
+                    val += `<br><small style="color:#7f8c8d; font-size:0.85em;">(Est. ${finalPredictedWeight.toFixed(1)})</small>`;
                 }
             }
             td.innerHTML = val;
