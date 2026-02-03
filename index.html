@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Deep Dive Shot Analyzer</title>
+    <link rel="icon" type="image/png" href="ui/assets/deep-dive-icon.png">
+    <link rel="apple-touch-icon" href="ui/assets/deep-dive-icon.png">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
@@ -28,13 +30,13 @@
         <div class="drop-zone" id="drop-zone-shot">
             <h3>1. Shot JSON</h3>
             <span class="drop-info" id="label-shot">Drag & Drop or Click</span>
-            <input type="file" id="file-shot" style="display: none;" accept=".json">
+            <input type="file" id="file-shot" style="display: none;" accept=".json" multiple>
         </div>
         <div class="drop-zone" id="drop-zone-profile">
             <button class="remove-file-btn" id="remove-profile-btn" onclick="removeProfile(event)">✕</button>
             <h3>2. Profile JSON (Optional)</h3>
             <span class="drop-info" id="label-profile">Drag & Drop or Click</span>
-            <input type="file" id="file-profile" style="display: none;" accept=".json">
+            <input type="file" id="file-profile" style="display: none;" accept=".json" multiple>
         </div>
     </div>
 
@@ -67,6 +69,8 @@
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script type="module" src="app.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

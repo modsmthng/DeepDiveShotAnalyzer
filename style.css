@@ -42,35 +42,28 @@ h1 {
 .subtitle-badge { 
     display: inline-flex;
     align-items: center;
-    gap: 8px; /* Slightly increased gap for better readability */
-    
-    /* Black background for contrast */
+    gap: 8px; 
     background-color: #000; 
     padding: 6px 12px; 
-    border-radius: 6px; /* Slightly rounded for a modern look */
-    
-    /* Superscript Positioning */
+    border-radius: 6px; 
     transform: translateY(-10px); 
     vertical-align: middle;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1); /* Subtle shadow for depth */
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1); 
 }
 
-/* The word "FOR" */
 .subtitle-badge span {
     color: #fff; 
-    font-size: 0.35em; /* Slightly smaller and subtle */
+    font-size: 0.35em; 
     text-transform: uppercase; 
     letter-spacing: 1.5px; 
-    font-weight: 300; /* Thinner/Lighter for elegance */
+    font-weight: 300; 
     opacity: 0.9;
 }
 
-/* The Logo within the black badge */
 .badge-logo {
     height: 16px; 
     width: auto;
     display: block;
-    /* INVERT: Turns the black logo white */
     filter: brightness(0) invert(1); 
 }
 
@@ -87,20 +80,20 @@ h1 {
     position: relative; 
 }
 .drop-zone:hover, .drop-zone.hover { background-color: #eaf6ff; border-color: #2980b9; }
-.drop-zone.loaded { border-style: solid; border-color: #2ecc71; background-color: #f0fdf4; color: #27ae60; }
+
+/* Loaded State (Cleaner - visual only) */
+.drop-zone.loaded { 
+    border-style: solid; 
+    border-color: #2ecc71; 
+    background-color: #f0fdf4; 
+    color: #27ae60; 
+}
+
 .drop-zone h3 { margin: 0 0 5px 0; font-size: 1.1em; color: inherit; }
 .drop-info { font-size: 0.8em; color: #7f8c8d; }
 
-.remove-file-btn {
-    position: absolute; top: 10px; right: 10px;
-    background: #e74c3c; color: white; border: none;
-    width: 24px; height: 24px; border-radius: 50%;
-    font-weight: bold; cursor: pointer; 
-    display: none; 
-    align-items: center; justify-content: center; font-size: 14px;
-    transition: transform 0.2s; z-index: 20;
-}
-.remove-file-btn:hover { transform: scale(1.1); background: #c0392b; }
+/* Hide old remove button if present */
+.remove-file-btn { display: none !important; }
 
 /* --- Controls & Settings --- */
 .controls-area { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
@@ -189,3 +182,497 @@ tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-rig
 
 /* --- Chart Area --- */
 .chart-wrapper { margin-top: 40px; height: 600px; display: none; position: relative; }
+
+
+/* --- Floating Library Panel (Compact Dashboard Style) --- */
+.sticky-library-panel {
+    position: sticky;
+    top: 0px; 
+    z-index: 100;
+    background: #fff;
+    margin: 0 -40px 30px -40px; 
+    padding: 10px 40px; 
+    border-bottom: 1px solid #dcdde1;
+    border-top: 1px solid #f0f0f0; 
+    box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+    transition: all 0.3s ease;
+}
+
+/* When collapsed */
+.sticky-library-panel.collapsed {
+    border-bottom: 1px solid #eee;
+    box-shadow: none;
+}
+
+.sticky-library-panel.collapsed .library-grid {
+    display: none;
+}
+
+/* --- Compact Status Buttons & Import --- */
+.library-status-bar {
+    display: flex;
+    width: 100%;
+    gap: 15px;
+    cursor: pointer;
+}
+
+/* Base Style for ALL Badges */
+.status-badge {
+    display: flex;
+    flex-direction: row; 
+    align-items: center;
+    padding: 8px 15px; 
+    background: #fff;
+    border: 1px solid #e1e4e8; 
+    border-radius: 6px;
+    transition: all 0.2s ease;
+    min-height: 36px;
+    position: relative;
+}
+
+/* -- VARIANT 1: The big Status Boxes (Shot/Profile) -- */
+.status-badge.shot,
+.status-badge.profile {
+    flex: 5; /* Takes 10x the space of import button */
+    justify-content: space-between;
+    padding-right: 15px; 
+}
+
+/* Default Hover (Empty State) */
+.status-badge.shot:hover,
+.status-badge.profile:hover {
+    border-color: #bdc3c7;
+    background: #fdfdfd;
+}
+
+/* --- LOADED STATE (Green theme when content is loaded) --- */
+.status-badge.loaded {
+    background-color: #f0fdf4;
+    border-color: #2ecc71;
+    color: #27ae60;
+}
+
+.status-badge.loaded .status-value {
+    color: #27ae60; /* Green Text */
+}
+
+/* --- MISMATCH STATE (Orange warning) --- */
+.status-badge.mismatch {
+    background-color: #fff8e1; /* Light Orange/Yellow background */
+    border-color: #f39c12;     /* Strong Orange Border */
+    color: #e67e22;
+}
+
+.status-badge.mismatch .status-value {
+    color: #d35400; /* Darker orange text for readability */
+}
+
+/* Optional: Warning Icon style if we add one inside the badge */
+.warning-icon {
+    margin-right: 6px;
+    font-size: 1.2em;
+    vertical-align: middle;
+}
+
+/* -- VARIANT 2: The Left Container (Logo & Import layered) -- */
+.status-badge.left-container {
+    flex: 1; /* Small width */
+    position: relative; /* Needed for absolute children */
+    background: #fff;
+    border: 1px solid transparent; /* Invisible border initially so size matches */
+    padding: 0; /* Remove padding to let children fill space */
+    overflow: hidden;
+}
+
+/* -- VARIANT 3: The Stats Button (Right Side) -- */
+.status-badge.stats-action {
+    flex: 1; /* Same width as Import/Left Container */
+    justify-content: center;
+    background: #fff;
+    border: 1px solid #3498db; 
+    color: #3498db;
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    cursor: pointer;
+}
+
+.status-badge.stats-action:hover {
+    background: #3498db;
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.1);
+}
+
+/* Common styles for both layers to center them */
+.header-app-logo,
+.header-import-btn {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.4s ease-in-out; /* Smooth cross-fade */
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* --- LAYER A: The Logo (Default State) --- */
+.header-app-logo {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1); /* Normal size */
+    max-height: 28px; /* Adjust to fit nicely */
+    width: auto;
+    pointer-events: none; /* Clicks go through */
+}
+
+/* --- LAYER B: The Import Button (Hidden State) --- */
+.header-import-btn {
+    opacity: 0;
+    pointer-events: none; /* Not clickable when hidden */
+    transform: translate(-50%, -30%); /* Slight offset for entry animation */
+    
+    /* Button Styling */
+    color: #3498db;
+    font-weight: 600;
+    font-size: 0.85em;
+    text-transform: uppercase;
+    white-space: nowrap;
+    background: rgba(255, 255, 255, 0.9); /* Slight background to cover logo perfectly */
+}
+
+/* ====== THE SWITCH (When scrolled down) ====== */
+.sticky-library-panel.is-stuck .status-badge.left-container {
+     border-color: #3498db; /* Blue border appears */
+}
+
+/* 1. Hide Logo */
+.sticky-library-panel.is-stuck .header-app-logo {
+    opacity: 0;
+    transform: translate(-50%, -70%) scale(0.9); /* Shrink and move up slightly */
+}
+
+/* 2. Show Button */
+.sticky-library-panel.is-stuck .header-import-btn {
+    opacity: 1;
+    pointer-events: auto; /* Make clickable */
+    transform: translate(-50%, -50%); /* Move to center */
+}
+
+/* Hover effect only works when button is visible */
+.sticky-library-panel.is-stuck .status-badge.left-container:hover {
+    background: #3498db;
+}
+.sticky-library-panel.is-stuck .status-badge.left-container:hover .header-import-btn {
+    color: white;
+}
+
+/* "floated" (is-stuck), if visable */
+.sticky-library-panel.is-stuck .status-badge.import-action {
+    opacity: 1;
+    visibility: visible;
+    cursor: pointer;
+}
+
+.status-badge.import-action:hover {
+    /* Hover if visable */
+    background: #fff; 
+    color: #3498db;
+}
+
+/* Hover Style if stuck */
+.sticky-library-panel.is-stuck .status-badge.import-action:hover {
+    background: #3498db;
+    color: white;
+}
+
+/* --- Badge Controls (Unload Button & Menu Icon) --- */
+.badge-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px; /* Space between X and Menu Icon */
+    margin-left: auto;
+    flex-shrink: 0; /* Prevent shrinking */
+}
+
+/* Unload 'X' Button */
+.unload-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    color: #27ae60; /* Match the green theme */
+    font-weight: bold;
+    font-size: 16px;
+    transition: all 0.2s;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.unload-btn:hover {
+    background: #e74c3c;
+    color: white;
+    transform: scale(1.1);
+}
+
+/* --- Pure CSS Menu Icon (Three Lines) --- */
+.css-menu-icon {
+    width: 14px;
+    height: 10px;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    opacity: 0.4;
+}
+
+.css-menu-icon::before,
+.css-menu-icon::after,
+.css-menu-icon span {
+    content: '';
+    display: block;
+    width: 100%;
+    height: 2px;
+    background-color: #333; 
+    border-radius: 1px;
+}
+
+.status-badge:hover .css-menu-icon {
+    opacity: 0.8;
+}
+
+/* --- Responsive Library Grid --- */
+.library-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); 
+    gap: 20px;
+    margin-top: 15px;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+/* --- Library Header (Sort & Actions) --- */
+.lib-header {
+    display: flex;
+    justify-content: space-between; /* Pushes Sort to Left, Actions to Right */
+    align-items: center;
+    margin-bottom: 8px;
+    padding: 0 2px;
+}
+
+.lib-header h4 {
+    display: none; /* Hide the title as requested */
+}
+
+/* Button Groups */
+.header-left, .header-right {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+}
+
+/* Label for Sort group */
+.sort-label {
+    font-size: 10px;
+    font-weight: bold;
+    color: #bdc3c7;
+    text-transform: uppercase;
+    margin-right: 4px;
+}
+
+/* Base Button Style */
+.btn-sort, .btn-export-all, .btn-clear-all {
+    border-radius: 4px;
+    font-size: 10px;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 600;
+    padding: 4px 8px;
+    text-transform: uppercase;
+}
+
+/* Sort Buttons (Gray/Light) */
+.btn-sort {
+    background: #f8f9fa;
+    border: 1px solid #dcdde1;
+    color: #7f8c8d;
+}
+.btn-sort:hover { border-color: #3498db; color: #3498db; }
+
+/* Action Buttons (Colors) */
+.btn-export-all {
+    background: #fff;
+    border: 1px solid #3498db;
+    color: #3498db;
+}
+.btn-export-all:hover { background: #3498db; color: white; }
+
+.btn-clear-all {
+    background: #fff;
+    border: 1px solid #e74c3c;
+    color: #e74c3c;
+}
+.btn-clear-all:hover { background: #e74c3c; color: white; }
+
+/* --- Optimized Library Table (Fixed Layout) --- */
+.lib-list-container {
+    max-height: 180px;
+    overflow-y: auto;
+    border: 1px solid #dcdde1;
+    border-radius: 4px;
+    background: #fff;
+    width: 100%;
+}
+.lib-list-container.expanded { max-height: none; }
+
+.lib-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 11px;
+    table-layout: fixed; /* Strict column width control */
+}
+
+.lib-table th, .lib-table td {
+    padding: 6px 10px;
+    border-bottom: 1px solid #f1f1f1;
+    vertical-align: middle;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.lib-table th {
+    background: #f8f9fa;
+    color: #7f8c8d;
+    font-weight: bold;
+    text-transform: uppercase;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    text-align: center;
+}
+
+/* --- COLUMN WIDTH DEFINITIONS --- */
+/* 1. Name: Flexible but controlled with percentages */
+.lib-table th:nth-child(1), 
+.lib-table td:nth-child(1) {
+    width: 45%; 
+    text-align: left;
+}
+
+/* 2. Date: Fixed Width */
+.lib-table th:nth-child(2), 
+.lib-table td:nth-child(2) {
+    width: 25%; 
+    text-align: center;
+}
+
+/* 3. Profile (only shots): Fixed Width */
+.lib-table th:nth-child(3), 
+.lib-table td:nth-child(3) {
+    width: 20%; 
+    text-align: center;
+}
+
+/* 4. Actions: Fixed Width */
+.lib-table th:last-child, 
+.lib-table td:last-child {
+    width: 10%;
+    text-align: right;
+    overflow: visible; 
+}
+
+/* Content Styles */
+.lib-meta-cell { color: #7f8c8d; }
+
+.lib-file-name {
+    display: block;
+    color: #3498db;
+    cursor: pointer;
+    font-weight: 500;
+}
+.lib-file-name:hover { text-decoration: underline; }
+
+/* Action Buttons */
+.lib-action-cell {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    gap: 4px;
+}
+
+.lib-row-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 18px;
+    padding: 0 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #dcdde1;
+    background: #fff;
+    text-transform: uppercase;
+    transition: all 0.2s;
+    line-height: 1;
+    color: #555;
+}
+
+.lib-row-btn.exp { color: #3498db; min-width: 25px; }
+.lib-row-btn.exp:hover { background: #3498db; color: white; border-color: #2980b9; }
+
+.lib-row-btn.del { color: #e74c3c; min-width: 20px; font-size: 14px; font-weight: 900; }
+.lib-row-btn.del:hover { background: #e74c3c; color: white; border-color: #c0392b; }
+
+.btn-show-more {
+    display: block;
+    width: 100%;
+    background: none;
+    border: 1px dashed #bdc3c7;
+    color: #7f8c8d;
+    padding: 5px;
+    font-size: 11px;
+    cursor: pointer;
+    border-radius: 4px;
+    margin-top: 5px;
+    transition: all 0.2s;
+}
+.btn-show-more:hover { background: #f8f9fa; color: #34495e; border-color: #7f8c8d; }
+
+.empty-msg { text-align: center; color: #bdc3c7; font-style: italic; padding: 20px; }
+
+/* --- Footer & Scroll Button --- */
+.library-footer {
+    display: flex;
+    justify-content: center;
+    margin-top: 15px;
+    padding-top: 10px;
+    border-top: 1px dashed #eee;
+}
+
+.btn-close-panel {
+    background: #f8f9fa;
+    border: 1px solid #dcdde1;
+    color: #7f8c8d;
+    padding: 6px 20px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.2s;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+.btn-close-panel:hover { background: #e74c3c; color: white; border-color: #e74c3c; }
+
+@media (max-width: 600px) {
+    .library-status-bar { flex-direction: column; gap: 5px; }
+    .status-value { max-width: 100%; }
+}
