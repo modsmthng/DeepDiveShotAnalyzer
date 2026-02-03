@@ -10,10 +10,10 @@ let isSensorDelayAuto = true;
 let resultArea, fileInfoContainer, fileInfoText, extendedInfoContent, toggleBtn, controlsArea, controlsGrid, tableHead, tableBody, tableFoot, chartWrapper;
 
 document.addEventListener('DOMContentLoaded', () => {
-    // --- 1. CSS Injection for Subtle Table Borders ---
+    // --- 1. CSS Injection for Subtle Table Borders & Styles ---
     const style = document.createElement('style');
     style.innerHTML = `
-        table { border-collapse: collapse; width: 100%; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 15px; }
         th, td { border: 1px solid #e0e0e0; }
         thead th { border-bottom: 2px solid #bdc3c7; }
         .phase-col { border-right: 2px solid #bdc3c7; background-color: #fcfcfc; }
@@ -161,35 +161,44 @@ function renderControls() {
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
         settingsDiv.id = 'analysis-settings';
-        settingsDiv.style.marginBottom = '15px';
-        settingsDiv.style.padding = '10px';
-        settingsDiv.style.background = '#e8f6f3';
-        settingsDiv.style.border = '1px solid #d1f2eb';
-        settingsDiv.style.borderRadius = '6px';
+        // REQ 1: Subtle Styling
+        settingsDiv.style.marginBottom = '10px';
+        settingsDiv.style.padding = '8px 12px';
+        settingsDiv.style.background = '#f9f9f9'; // Subtle grey
+        settingsDiv.style.border = '1px solid #e0e0e0'; // Subtle border
+        settingsDiv.style.borderRadius = '4px';
         
+        // REQ 3: Added Tooltip to Sensor div
         settingsDiv.innerHTML = `
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px;">
-                <h4 style="margin: 0; color: #16a085; margin-right: 10px;">Stop Delays</h4>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em;">
+                <h4 style="margin: 0; color: #34495e; margin-right: 10px; font-size: 1em;">Stop Delays</h4>
                 
                 <div style="display: flex; align-items: center; gap: 5px;" title="Compensates for Bluetooth scale latency.">
-                    <label for="predictive-scale-delay" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">Scale (BT):</label>
-                    <input type="number" id="predictive-scale-delay" value="800" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
-                    <span style="font-size: 0.8em; color: #7f8c8d;">ms</span>
+                    <label for="predictive-scale-delay" style="font-weight: bold; color: #555;">Scale (BT):</label>
+                    <input type="number" id="predictive-scale-delay" value="800" step="50" style="padding: 2px 4px; width: 50px; border: 1px solid #ccc; border-radius: 3px;">
+                    <span style="color: #888;">ms</span>
                 </div>
 
-                <div style="display: flex; align-items: center; gap: 5px;">
-                    <label for="predictive-sensor-delay" style="font-size: 0.9em; font-weight: bold; color: #2c3e50;">System/Sensor:</label>
-                    <input type="number" id="predictive-sensor-delay" value="200" step="50" style="padding: 4px; width: 60px; border: 1px solid #bdc3c7; border-radius: 4px;">
-                    <span style="font-size: 0.8em; color: #7f8c8d;">ms</span>
+                <div style="display: flex; align-items: center; gap: 5px;" title="Compensates for internal system processing time and sensor lag.">
+                    <label for="predictive-sensor-delay" style="font-weight: bold; color: #555;">System/Sensor:</label>
+                    <input type="number" id="predictive-sensor-delay" value="200" step="50" style="padding: 2px 4px; width: 50px; border: 1px solid #ccc; border-radius: 3px;">
+                    <span style="color: #888;">ms</span>
                     
                     <div style="margin-left:8px; display:flex; align-items:center;">
                         <input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''} style="cursor:pointer;">
-                        <label for="auto-sensor-delay" style="font-size:0.8em; margin-left:4px; color:#16a085; cursor:pointer; font-weight:bold;">Auto</label>
+                        <label for="auto-sensor-delay" style="margin-left:4px; color:#16a085; cursor:pointer; font-weight:bold;">Auto</label>
                     </div>
                 </div>
             </div>
         `;
-        controlsGrid.parentNode.insertBefore(settingsDiv, controlsGrid);
+        
+        // REQ 1: Logic to place settings directly OVER the table
+        const table = tableFoot.closest('table');
+        if (table && table.parentNode) {
+            table.parentNode.insertBefore(settingsDiv, table); 
+        } else {
+            controlsGrid.parentNode.insertBefore(settingsDiv, controlsGrid);
+        }
         
         const scaleInput = document.getElementById('predictive-scale-delay');
         const sensorInput = document.getElementById('predictive-sensor-delay');
@@ -197,7 +206,7 @@ function renderControls() {
         
         const triggerUpdate = () => analyzeShot(currentShotData, document.getElementById('label-shot').innerText);
         
-        // --- 2. Logic for Auto-Disable Input ---
+        // Logic for Auto-Disable Input
         const updateInputState = () => {
             if (isSensorDelayAuto) {
                 sensorInput.disabled = true;
@@ -214,7 +223,6 @@ function renderControls() {
         updateInputState();
 
         scaleInput.addEventListener('change', triggerUpdate);
-        
         sensorInput.addEventListener('change', triggerUpdate);
         
         autoCheck.addEventListener('change', (e) => {
@@ -415,7 +423,8 @@ function analyzeShot(data, filename) {
     }
 
     if (wasAutoAdjusted) {
-        modeLabel += `<br><span title="System delay adjusted to 800ms for analysis" style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#d6eaf8; color:#2980b9; font-size:0.8em; border:1px solid #a9cce3; font-weight:bold; cursor:help;">Auto-Adjust Active</span>`;
+        // REQ 2: distinct visual style (Purple/Software Look) for Auto-Adjust
+        modeLabel += `<br><span title="System delay adjusted to 800ms for analysis" style="display:inline-block; margin-top:2px; padding:2px 6px; border-radius:4px; background:#f3e5f5; color:#8e24aa; font-size:0.8em; border:1px dashed #ce93d8; font-weight:bold; cursor:help;">Auto-Adjust Active</span>`;
     }
 
     let trHead = document.createElement('tr');
@@ -561,7 +570,6 @@ function analyzeShot(data, filename) {
                         });
 
                         const bestMatch = hitTargets[0];
-                        // NEW: Naming
                         const reasonText = formatStopReason(bestMatch.type);
 
                         exitReasonBadge = `<br><span class="reason-badge reason-target">${reasonText}</span>`;
@@ -636,7 +644,6 @@ function analyzeShot(data, filename) {
                 case 'sys_ext': val = (gSamples[0].systemInfo?.extendedRecording !== undefined) ? ((gSamples[0].systemInfo.extendedRecording) ? "Yes" : "No") : "-"; break;
             }
 
-            // --- 3. REQ: Removed Warning Icon ⚠️ ---
             if (col.id === 'weight' && scaleConnectionBrokenPermanently) {
                 val = `<span style="font-weight:bold; color:#c0392b; border-bottom:1px dashed #c0392b;">${val}</span><br><span style="font-size:0.8em; color:#e74c3c;">Scale Lost</span>`;
             }
@@ -663,7 +670,7 @@ function analyzeShot(data, filename) {
                 }
                 
                 if (col.id === 'weight' && finalPredictedWeight !== null && weightVal > 0.1 && !scaleConnectionBrokenPermanently) {
-                    val += `<br><small style="color:#7f8c8d; font-size:0.85em;">(Est. ${finalPredictedWeight.toFixed(1)})</small>`;
+                    val += `<br><small style="color:#7f8c8d; font-size:0.85em;" title="Predicted weight based on flow rate due to scale lag">(Est. ${finalPredictedWeight.toFixed(1)})</small>`;
                 }
             }
             td.innerHTML = val;
