@@ -37,13 +37,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // --- Scroll-Check for Sticky Panel ---
-    // Note: Adjusted selector to look for the new container instead of upload-grid
     window.addEventListener('scroll', () => {
         const panel = document.getElementById('sticky-library-panel');
-        const dropContainer = document.querySelector('.unified-drop-container');
+        const guideContainer = document.querySelector('.import-guide-container');
         
-        if (panel && dropContainer) {
-            const threshold = dropContainer.offsetTop + dropContainer.offsetHeight;
+        if (panel && guideContainer) {
+            const threshold = guideContainer.offsetTop + guideContainer.offsetHeight;
             if (window.scrollY > (threshold - 20)) {
                 panel.classList.add('is-stuck');
             } else {
@@ -54,9 +53,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Initialize Database UI
     refreshLibraryUI();
-
-    // Setup the new Single Smart Drop Zone
-    setupUnifiedDropZone();
 });
 
 /**
@@ -71,15 +67,16 @@ window.unloadShot = (e) => {
     const controlsArea = document.getElementById('controls-area');
     const chartArea = document.getElementById('chart-wrapper');
     const infoArea = document.getElementById('file-info-container');
-    const resultArea = document.getElementById('result-area'); // Wrapper for table
+    const resultArea = document.getElementById('result-area');
+    
+    // Also hide the dynamic settings div if it exists
+    const settingsDiv = document.getElementById('analysis-settings');
+    if (settingsDiv) settingsDiv.style.display = 'none';
 
     if (controlsArea) controlsArea.style.display = 'none';
     if (chartArea) chartArea.style.display = 'none';
     if (infoArea) infoArea.style.display = 'none';
     if (resultArea) resultArea.style.display = 'none';
-
-    // BUGFIX: Removed statsTable.innerHTML = ''; 
-    // This prevented the table from reloading because it deleted the <thead> with the ID.
 
     refreshLibraryUI();
 };
@@ -97,53 +94,11 @@ window.unloadProfile = (e) => {
 };
 
 /**
- * Setup the Unified Smart Drop Zone
- */
-function setupUnifiedDropZone() {
-    const zone = document.getElementById('drop-zone-unified');
-    const input = document.getElementById('file-unified');
-
-    if (!zone || !input) return;
-
-    // Drag Effects
-    zone.addEventListener('dragover', (e) => { 
-        e.preventDefault(); 
-        zone.classList.add('hover'); 
-    });
-    
-    zone.addEventListener('dragleave', () => { 
-        zone.classList.remove('hover'); 
-    });
-
-    // Drop Handler
-    zone.addEventListener('drop', (e) => { 
-        e.preventDefault(); 
-        zone.classList.remove('hover'); 
-        if (e.dataTransfer.files.length > 0) {
-            handleSmartImport(e.dataTransfer.files);
-        }
-    });
-
-    // Click Handler
-    zone.addEventListener('click', () => input.click());
-
-    // Input Change Handler
-    input.addEventListener('change', (e) => { 
-        if (e.target.files.length > 0) {
-            handleSmartImport(e.target.files);
-        }
-        // Reset input so same file can be selected again if needed
-        input.value = '';
-    });
-}
-
-/**
  * Smart Import Logic: Detects file type and routes accordingly
  */
 function handleSmartImport(fileList) {
     Array.from(fileList).forEach(file => {
         const reader = new FileReader();
-        
         reader.onload = (event) => {
             try {
                 const data = JSON.parse(event.target.result);
@@ -153,13 +108,9 @@ function handleSmartImport(fileList) {
                 const hasPhases = data.hasOwnProperty('phases');
                 
                 if (hasSamples) {
-                    // It is a SHOT
-                    console.log("Smart Import: Detected Shot ->", file.name);
                     saveToLibrary(DB_KEYS.SHOTS, file.name, data);
                     loadShot(data, file.name);
                 } else if (hasPhases) {
-                    // It is a PROFILE
-                    console.log("Smart Import: Detected Profile ->", file.name);
                     saveToLibrary(DB_KEYS.PROFILES, file.name, data);
                     loadProfile(data, file.name);
                 } else {
@@ -178,13 +129,49 @@ function handleSmartImport(fileList) {
 }
 
 /**
+ * Attaches events to the dynamically created Import Button in the dashboard
+ */
+function setupSmartImport() {
+    const zone = document.getElementById('drop-zone-import');
+    const input = document.getElementById('file-unified');
+
+    if (!zone || !input) return;
+
+    // Drag Effects
+    zone.addEventListener('dragover', (e) => { 
+        e.preventDefault(); 
+        zone.classList.add('hover'); 
+    });
+    
+    zone.addEventListener('dragleave', () => zone.classList.remove('hover'));
+    
+    zone.addEventListener('drop', (e) => { 
+        e.preventDefault(); 
+        zone.classList.remove('hover'); 
+        if (e.dataTransfer.files.length > 0) {
+            handleSmartImport(e.dataTransfer.files);
+        }
+    });
+
+    // Click Handler
+    zone.onclick = () => input.click();
+
+    // Input Change Handler
+    input.onchange = (e) => { 
+        if (e.target.files.length > 0) {
+            handleSmartImport(e.target.files);
+        }
+        input.value = ''; // Reset
+    };
+}
+
+/**
  * Core loading logic for Shots 
  */
 function loadShot(data, name) {
     currentShotData = data;
     currentShotName = cleanName(name); 
     
-    // Auto-match logic using profile label
     if (data.profile) {
         try {
             const profiles = JSON.parse(localStorage.getItem(DB_KEYS.PROFILES) || '[]');
@@ -276,7 +263,7 @@ function getSortedLibrary(collection) {
 }
 
 /**
- * Library UI Renderer
+ * Library UI Renderer (Updated with Sort Headers, SVG Icons, and Symmetrical Layout)
  */
 function refreshLibraryUI() {
     let stickyPanel = document.getElementById('sticky-library-panel');
@@ -285,18 +272,13 @@ function refreshLibraryUI() {
         stickyPanel = document.createElement('div');
         stickyPanel.id = 'sticky-library-panel';
         stickyPanel.className = 'sticky-library-panel';
-        // Insert after the new unified drop container
-        const dropContainer = document.querySelector('.unified-drop-container');
-        if (dropContainer && dropContainer.nextSibling) {
-            dropContainer.parentNode.insertBefore(stickyPanel, dropContainer.nextSibling);
+        const guideContainer = document.querySelector('.import-guide-container');
+        if (guideContainer && guideContainer.nextSibling) {
+            guideContainer.parentNode.insertBefore(stickyPanel, guideContainer.nextSibling);
         }
     }
 
-    if (isLibraryCollapsed) {
-        stickyPanel.classList.add('collapsed');
-    } else {
-        stickyPanel.classList.remove('collapsed');
-    }
+    stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
 
     let shots = getSortedLibrary(DB_KEYS.SHOTS);
     let profiles = getSortedLibrary(DB_KEYS.PROFILES);
@@ -311,15 +293,32 @@ function refreshLibraryUI() {
         shots.sort((a, b) => (a.profileName || "").toLowerCase() === target ? -1 : (b.profileName || "").toLowerCase() === target ? 1 : 0);
     }
 
+    // Helper to generate Sort Icon SVG based on state
+    const getSortIcon = (colType, colKey) => {
+        const isActive = currentSort[colType] === colKey;
+        const isAsc = currentSort.order === 'asc';
+        const opacity = isActive ? 1 : 0.2;
+        const rotation = (isActive && isAsc) ? 'rotate(180)' : 'rotate(0)';
+        const color = isActive ? '#3498db' : '#95a5a6';
+        
+        // Simple Triangle SVG
+        return `<svg width="8" height="8" viewBox="0 0 10 10" style="margin-left:5px; opacity:${opacity}; transform:${rotation}; transition: transform 0.2s;">
+            <path d="M5 10L0 0L10 0L5 10Z" fill="${color}"/>
+        </svg>`;
+    };
+
     const createSection = (title, items, type) => {
         const isExpanded = libraryExpanded[type];
+        
+        // --- ICONS (SVG Strings) ---
+        const iconExport = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
+        const iconTrash = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
+
         return `
             <div class="library-section">
                 <div class="lib-header">
                     <div class="header-left">
-                        <span class="sort-label">${title} (${items.length})</span>
-                        <button class="btn-sort" onclick="window.updateSort('${type}', 'shotDate')">Date</button>
-                        <button class="btn-sort" onclick="window.updateSort('${type}', 'name')">Name</button>
+                        <span class="sort-label">${title} <span style="color:#bdc3c7; font-weight:400;">(${items.length})</span></span>
                     </div>
                     <div class="header-right">
                         <button class="btn-export-all" onclick="window.exportFullLibrary('${type}')">Export All</button>
@@ -328,20 +327,29 @@ function refreshLibraryUI() {
                 </div>
                 <div class="lib-list-container ${isExpanded ? 'expanded' : ''}">
                     <table class="lib-table">
-                        <thead><tr><th>Name</th><th>Date</th>${type === DB_KEYS.SHOTS ? '<th>Profile</th>' : ''}<th>Actions</th></tr></thead>
+                        <thead>
+                            <tr>
+                                <th onclick="window.updateSort('${type}', 'name')">Name ${getSortIcon(type, 'name')}</th>
+                                <th onclick="window.updateSort('${type}', 'shotDate')">Date ${getSortIcon(type, 'shotDate')}</th>
+                                ${type === DB_KEYS.SHOTS ? `<th onclick="window.updateSort('${type}', 'profileName')">Profile ${getSortIcon(type, 'profileName')}</th>` : ''}
+                                <th style="cursor:default; text-align:right;">Actions</th>
+                            </tr>
+                        </thead>
                         <tbody>
                             ${items.map(item => {
                                 const isMatch = (type === DB_KEYS.PROFILES && currentShotData && item.name.toLowerCase() === (currentShotData.profile || "").toLowerCase()) ||
                                                 (type === DB_KEYS.SHOTS && currentProfileName && (item.profileName || "").toLowerCase() === currentProfileName.toLowerCase());
                                 return `
-                                    <tr style="${isMatch ? 'background-color: #f0fdf4; font-weight:bold;' : ''}">
+                                    <tr style="${isMatch ? 'background-color: #f0fdf4; font-weight:600;' : ''}">
                                         <td title="${item.name}"><span class="lib-file-name" onclick="window.triggerLoad('${type}', '${item.name}')">${item.name}</span></td>
                                         <td class="lib-meta-cell">${new Date(item.shotDate).toLocaleDateString()}</td>
                                         ${type === DB_KEYS.SHOTS ? `<td class="lib-meta-cell">${item.profileName}</td>` : ''}
-                                        <td><div class="lib-action-cell">
-                                            <span class="lib-row-btn exp" onclick="window.exportSingleItem('${type}', '${item.name}')">EXP</span>
-                                            <span class="lib-row-btn del" onclick="window.deleteSingleItem('${type}', '${item.name}')">−</span>
-                                        </div></td>
+                                        <td>
+                                            <div class="lib-action-cell">
+                                                <button class="icon-btn exp" title="Export JSON" onclick="window.exportSingleItem('${type}', '${item.name}')">${iconExport}</button>
+                                                <button class="icon-btn del" title="Delete" onclick="window.deleteSingleItem('${type}', '${item.name}')">${iconTrash}</button>
+                                            </div>
+                                        </td>
                                     </tr>`;
                             }).join('')}
                         </tbody>
@@ -364,22 +372,33 @@ function refreshLibraryUI() {
         }
     }
 
+    // --- HTML STRUCTURE (Symmetrical Badges) ---
     stickyPanel.innerHTML = `
         <div class="library-status-bar">
             <div class="status-bar-group">
-                <div class="status-badge left-container">
-                    <img src="ui/assets/deep-dive-logo.png" class="header-app-logo">
-                    <div class="header-import-btn" onclick="window.scrollTo({top:0, behavior:'smooth'})"><span>IMPORT</span></div>
+                <div id="drop-zone-import" class="status-badge import-action" title="Drag & Drop or Click to Import">
+                    <span>IMPORT</span>
+                    <input type="file" id="file-unified" multiple accept=".json" style="display: none;">
                 </div>
                 <div class="${shotClass}" onclick="window.toggleStickyPanel()">
+                    <div class="badge-left">
+                        <div class="css-menu-icon"><span></span></div>
+                    </div>
                     <span class="status-value">${currentShotName}</span>
-                    <div class="badge-controls">${currentShotData ? `<span class="unload-btn" onclick="window.unloadShot(event)">×</span>` : ''}<div class="css-menu-icon"><span></span></div></div>
+                    <div class="badge-right">
+                        ${currentShotData ? `<span class="unload-btn" onclick="window.unloadShot(event)">×</span>` : ''}
+                    </div>
                 </div>
             </div>
             <div class="status-bar-group">
                 <div class="${profileClass}" onclick="window.toggleStickyPanel()" title="${mismatchTitle}">
+                    <div class="badge-left">
+                        <div class="css-menu-icon"><span></span></div>
+                    </div>
                     <span class="status-value">${profileClass.includes('mismatch') ? '⚠ ' : ''}${currentProfileName}</span>
-                    <div class="badge-controls">${currentProfileData ? `<span class="unload-btn" onclick="window.unloadProfile(event)">×</span>` : ''}<div class="css-menu-icon"><span></span></div></div>
+                    <div class="badge-right">
+                        ${currentProfileData ? `<span class="unload-btn" onclick="window.unloadProfile(event)">×</span>` : ''}
+                    </div>
                 </div>
                 <div class="status-badge stats-action" onclick="window.showStatsFeatureInfo()"><span>STATS</span></div>
             </div>
@@ -390,6 +409,8 @@ function refreshLibraryUI() {
     if (!isLibraryCollapsed) {
         stickyPanel.innerHTML += `<div class="library-footer"><button class="btn-close-panel" onclick="window.toggleStickyPanel()">Close Library</button></div>`;
     }
+
+    setupSmartImport();
 }
 
 /**
@@ -397,7 +418,13 @@ function refreshLibraryUI() {
  */
 function checkAndAnalyze() {
     if (!currentShotData) return;
+    
+    // Make sure result area is visible
+    const resultArea = document.getElementById('result-area');
+    if (resultArea) resultArea.style.display = 'block';
+
     document.getElementById('controls-area').style.display = 'block';
+    
     renderControls();
     performAnalysis();
 }
@@ -427,31 +454,43 @@ function performAnalysis() {
 
 /**
  * UI Controls Rendering
+ * UPDATED: Latency settings now placed directly above the Analysis Table
+ * UPDATED: Column checkboxes now include description suffix
  */
 function renderControls() {
     const grid = document.getElementById('controls-grid');
     if (!grid) return;
     grid.innerHTML = '';
 
-    // Latency Settings Injection
+    // 1. Latency Settings Injection (Placed immediately before the table container)
     let settingsDiv = document.getElementById('analysis-settings');
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
         settingsDiv.id = 'analysis-settings';
+        // Styled to fit neatly above the table
         settingsDiv.innerHTML = `
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em; margin-bottom:15px; background:#fff; padding:10px; border-radius:8px; border:1px solid #eee;">
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px; border:1px solid #dcdde1;">
                 <h4 style="margin: 0; color: #34495e;">Latency Settings</h4>
                 <div style="display: flex; align-items: center; gap: 5px;">
                     <label>Scale:</label> <input type="number" id="predictive-scale-delay" value="800" step="50" style="width: 50px;"> ms
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <label>Sensor:</label> <input type="number" id="predictive-sensor-delay" value="200" step="50" style="width: 50px;"> ms
+                    <label>System:</label> <input type="number" id="predictive-sensor-delay" value="200" step="50" style="width: 50px;"> ms
                     <input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''}> Auto
                 </div>
             </div>`;
-        const container = document.getElementById('file-info-container');
-        if(container && container.parentNode) container.parentNode.insertBefore(settingsDiv, container.nextSibling);
         
+        // Find the table container to inject before
+        const tableContainer = document.querySelector('.table-container');
+        if(tableContainer && tableContainer.parentNode) {
+            tableContainer.parentNode.insertBefore(settingsDiv, tableContainer);
+        } else {
+             // Fallback if table container not found, put it in controls area
+            const container = document.getElementById('controls-area');
+            if(container) container.appendChild(settingsDiv);
+        }
+        
+        // Event Listeners
         document.getElementById('predictive-scale-delay').onchange = performAnalysis;
         const sensorInp = document.getElementById('predictive-sensor-delay');
         sensorInp.onchange = performAnalysis;
@@ -460,9 +499,12 @@ function renderControls() {
             sensorInp.disabled = isSensorDelayAuto;
             performAnalysis();
         };
+    } else {
+        // Ensure it is visible if it was hidden
+        settingsDiv.style.display = 'block';
     }
 
-    // Column Checkboxes
+    // 2. Column Checkboxes with Descriptions
     const grouped = {};
     columnConfig.forEach(col => {
         if (!grouped[col.group]) grouped[col.group] = [];
@@ -476,7 +518,14 @@ function renderControls() {
         grouped[key].forEach(col => {
             const lbl = document.createElement('label');
             lbl.className = 'checkbox-label';
-            lbl.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''}> ${col.label}`;
+            
+            // Re-added logic for descriptive suffixes
+            let suffix = "";
+            if (col.type === 'se') suffix = " <small style='color:#95a5a6'>Start / End</small>";
+            else if (col.type === 'mm') suffix = " <small style='color:#95a5a6'>[min / max]</small>";
+            else if (col.type === 'avg') suffix = " <small style='color:#95a5a6'>Avg (Time-Weighted)</small>";
+            
+            lbl.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''}> ${col.label}${suffix}`;
             div.appendChild(lbl);
             setTimeout(() => {
                 const cb = document.getElementById(`chk-${col.id}`);
