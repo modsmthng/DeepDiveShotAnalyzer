@@ -440,37 +440,48 @@ function refreshLibraryUI() {
         }
     }
 
+    // --- HTML STRUCTURE (Aligned Grid) ---
+    // The status bar is now a grid with 2 columns, matching the drop zones.
+    // Left Column: [Logo/Import] + [Shot Badge]
+    // Right Column: [Profile Badge] + [Stats]
+    
     let html = `
         <div class="library-status-bar">
-            <div class="status-badge left-container">
-                <img src="ui/assets/deep-dive-logo.png" alt="Deep Dive Logo" class="header-app-logo">
-                <div class="header-import-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" title="Scroll to Drop Zones">
-                    <span>IMPORT</span>
+            
+            <div class="status-bar-group">
+                <div class="status-badge left-container">
+                    <img src="ui/assets/deep-dive-logo.png" alt="Deep Dive Logo" class="header-app-logo">
+                    <div class="header-import-btn" onclick="window.scrollTo({ top: 0, behavior: 'smooth' })" title="Scroll to Drop Zones">
+                        <span>IMPORT</span>
+                    </div>
+                </div>
+
+                <div class="${shotClass}" onclick="window.toggleStickyPanel()" title="Click to open/close Library">
+                    <span class="status-value">${currentShotName}</span>
+                    <div class="badge-controls">
+                        ${currentShotData ? `<span class="unload-btn" title="Unload Shot" onclick="window.unloadShot(event)">×</span>` : ''}
+                        <div class="css-menu-icon"><span></span></div>
+                    </div>
                 </div>
             </div>
 
-            <div class="${shotClass}" onclick="window.toggleStickyPanel()" title="Click to open/close Library">
-                <span class="status-value">${currentShotName}</span>
-                <div class="badge-controls">
-                    ${currentShotData ? `<span class="unload-btn" title="Unload Shot" onclick="window.unloadShot(event)">×</span>` : ''}
-                    <div class="css-menu-icon"><span></span></div>
+            <div class="status-bar-group">
+                <div class="${profileClass}" onclick="window.toggleStickyPanel()" title="${mismatchTitle}">
+                    <span class="status-value">
+                        ${profileClass.includes('mismatch') ? '<span class="warning-icon">⚠</span>' : ''}
+                        ${currentProfileName}
+                    </span>
+                    <div class="badge-controls">
+                        ${currentProfileData ? `<span class="unload-btn" title="Unload Profile" onclick="window.unloadProfile(event)">×</span>` : ''}
+                        <div class="css-menu-icon"><span></span></div>
+                    </div>
+                </div>
+
+                <div class="status-badge stats-action" onclick="window.showStatsFeatureInfo()" title="Coming Soon: Advanced Analytics">
+                    <span>STATS</span>
                 </div>
             </div>
 
-            <div class="${profileClass}" onclick="window.toggleStickyPanel()" title="${mismatchTitle}">
-                <span class="status-value">
-                    ${profileClass.includes('mismatch') ? '<span class="warning-icon">⚠</span>' : ''}
-                    ${currentProfileName}
-                </span>
-                <div class="badge-controls">
-                    ${currentProfileData ? `<span class="unload-btn" title="Unload Profile" onclick="window.unloadProfile(event)">×</span>` : ''}
-                    <div class="css-menu-icon"><span></span></div>
-                </div>
-            </div>
-
-            <div class="status-badge stats-action" onclick="window.showStatsFeatureInfo()" title="Coming Soon: Advanced Analytics">
-                <span>STATS</span>
-            </div>
         </div>
 
         <div class="library-grid">
@@ -589,7 +600,7 @@ function performAnalysis() {
         sensorDelayMs: usedSensorDelay,
         isAutoAdjusted: autoActive
     });
-    renderFileInfo(currentShotData, document.getElementById('label-shot').innerText);
+    renderFileInfo(currentShotData, currentShotName);
     renderTable(results);
     renderChart(results);
 }

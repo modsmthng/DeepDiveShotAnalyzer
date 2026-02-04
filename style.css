@@ -117,48 +117,202 @@ h1 {
 .checkbox-label { display: block; font-size: 13px; margin-bottom: 4px; cursor: pointer; }
 .checkbox-label input { margin-right: 6px; }
 
-/* --- Data Table --- */
-.table-container { overflow-x: auto; max-height: 600px; }
-table { width: 100%; border-collapse: separate; border-spacing: 0; margin-top: 5px; font-size: 12px; min-width: 800px; }
-th, td { padding: 8px 6px; text-align: right; border-bottom: 1px solid #ddd; vertical-align: middle; white-space: nowrap; }
+/* ============================================================
+   ANALYSIS TABLE STYLING (The Main Data View)
+   ============================================================ */
 
-th { text-align: center; background-color: #2c3e50; color: white; position: sticky; top: 0; z-index: 10; border-bottom: 2px solid #1a252f; }
-/* Apply group colors to headers as well */
-th.group-basics { border-top: 3px solid #7f8c8d; }
-th.group-pressure { border-top: 3px solid #3498db; }
-th.group-target_pressure { border-top: 3px dashed #2980b9; }
-th.group-flow { border-top: 3px solid #27ae60; }
-th.group-target_flow { border-top: 3px dashed #1e8449; }
-th.group-puckflow { border-top: 3px solid #9b59b6; }
-th.group-temp { border-top: 3px solid #e74c3c; }
-th.group-target_temp { border-top: 3px dashed #c0392b; }
-th.group-system { border-top: 3px solid #f39c12; }
+.table-container { 
+    width: 100%; 
+    overflow-x: auto; 
+    border: 1px solid #dcdde1; 
+    border-radius: 4px; 
+    background: #fff;
+    margin-top: 20px;
+}
 
-tr:nth-child(even) { background-color: #f9f9f9; }
+/* 1. Global Table Settings */
+.table-container table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: auto !important; 
+    min-width: 1200px;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 12px; 
+}
+
+/* 2. Column Visibility (Checkbox Control) */
+.hidden-col { display: none !important; }
+
+/* 3. Header Styling (Dark Background / White Text) */
+.table-container th { 
+    text-align: center; 
+    background-color: #2c3e50 !important; 
+    color: #ffffff !important;           
+    position: sticky; 
+    top: 0; 
+    z-index: 20; 
+    border-bottom: 2px solid #1a252f;
+    padding: 12px 5px;
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+/* 4. Top-Left Corner Fix (Phase Header) */
+.table-container th.phase-col {
+    background-color: #2c3e50 !important;
+    color: #ffffff !important;
+    z-index: 30; 
+    border-right: 2px solid #34495e;
+}
+
+/* 5. Metric Group Indicators (Top Border on Headers) */
+.table-container th.group-basics { border-top: 3px solid #7f8c8d; }
+.table-container th.group-pressure { border-top: 3px solid #3498db; }
+.table-container th.group-target_pressure { border-top: 3px dashed #2980b9; }
+.table-container th.group-flow { border-top: 3px solid #27ae60; }
+.table-container th.group-target_flow { border-top: 3px dashed #1e8449; }
+.table-container th.group-puckflow { border-top: 3px solid #9b59b6; }
+.table-container th.group-temp { border-top: 3px solid #e74c3c; }
+.table-container th.group-target_temp { border-top: 3px dashed #c0392b; }
+.table-container th.group-system { border-top: 3px solid #f39c12; }
+
+/* 6. Body Cell Styling */
+.table-container td {
+    padding: 8px 10px;
+    text-align: right;
+    white-space: nowrap;
+    border-bottom: 1px solid #eee;
+    vertical-align: middle;
+}
+
+/* Zebra Stripes */
+.table-container tbody tr:nth-child(even) { background-color: #fcfcfc; }
+.table-container tbody tr:hover { background-color: #f1f4f6; }
+
+/* 7. Subtle Column Tinting (Body only) */
+.table-container td.group-basics { background-color: rgba(127, 140, 141, 0.04); }
+.table-container td.group-pressure { background-color: rgba(52, 152, 219, 0.05); }
+.table-container td.group-target_pressure { background-color: rgba(41, 128, 185, 0.03); }
+.table-container td.group-flow { background-color: rgba(39, 174, 96, 0.05); }
+.table-container td.group-target_flow { background-color: rgba(30, 132, 73, 0.03); }
+.table-container td.group-puckflow { background-color: rgba(155, 89, 182, 0.04); }
+.table-container td.group-temp { background-color: rgba(231, 76, 60, 0.05); }
+.table-container td.group-target_temp { background-color: rgba(192, 57, 43, 0.03); }
+.table-container td.group-system { background-color: rgba(243, 156, 18, 0.04); }
+
+/* 8. Sticky Phase Column (Body) */
+.table-container td.phase-col {
+    background-color: #ffffff !important; 
+    z-index: 6;
+    text-align: left !important;
+}
+.table-container tr:nth-child(even) td.phase-col { background-color: #fcfcfc !important; }
+
+/* 9. Data Formatting Helpers */
+.trigger-hit { color: #d35400; font-weight: bold; background-color: rgba(230, 126, 34, 0.1); border-radius: 4px; padding: 1px 4px; }
+.val-target { color: #95a5a6; font-size: 0.85em; margin-left: 4px; font-style: italic; }
+.phase-name { font-weight: bold; font-size: 1.05em; color: #e67e22; display: block; }
+.phase-num { font-size: 0.85em; color: #95a5a6; }
+
+/* Footer Styling */
 tfoot tr { background-color: #eaeded !important; font-weight: bold; border-top: 2px solid #bdc3c7; }
 tfoot td { border-bottom: none; color: #2c3e50; }
 
-.hidden-col { display: none; }
-
-/* Sticky Phase Column */
-.phase-col { text-align: left; color: #2c3e50; min-width: 140px; position: sticky; left: 0; background: white; z-index: 5; border-right: 2px solid #eee; }
-tr:nth-child(even) .phase-col { background-color: #f9f9f9; } 
-th.phase-col { background-color: #2c3e50; z-index: 15; border-top: 3px solid #2c3e50; }
-tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-right: 2px solid #bdc3c7;} 
-
-.phase-name { font-weight: bold; font-size: 1.05em; color: #e67e22; display: block; }
-.phase-num { font-size: 0.85em; color: #95a5a6; font-weight: normal; }
-
-/* Phase Badges & Indicators */
+/* Status Badges within Table */
 .reason-badge { 
-    display: inline-block; font-size: 0.85em; padding: 2px 6px; border-radius: 4px; 
-    margin-top: 3px; color: white; background-color: #7f8c8d; font-weight: normal;
+    display: inline-block; 
+    font-size: 0.85em; 
+    padding: 2px 6px; 
+    border-radius: 4px; 
+    margin-top: 3px; 
+    color: white; 
+    background-color: #7f8c8d; 
+    font-weight: normal;
 }
-.reason-time { background-color: #34495e; } 
-.reason-target { background-color: #d35400; } 
+.reason-target { background-color: #d35400; }
 
-.val-target { color: #95a5a6; font-size: 0.85em; margin-left: 4px; font-style: italic; font-weight: normal;}
-.trigger-hit { color: #d35400; font-weight: bold; background-color: rgba(230, 126, 34, 0.1); border-radius: 4px; padding: 1px 4px; }
+/* --- Library Tables (Specific) --- */
+/* These tables are inside the library panel and need fixed layout for name truncation */
+.lib-table {
+    width: 100%;
+    border-collapse: collapse;
+    table-layout: fixed !important; /* Required for text-overflow: ellipsis */
+    min-width: 0 !important; /* Ensure it fits the library columns */
+}
+
+/* Cell formatting for Library only */
+.lib-table th, 
+.lib-table td { 
+    padding: 6px 10px; 
+    border-bottom: 1px solid #f1f1f1; 
+    vertical-align: middle; 
+    white-space: nowrap; 
+    overflow: hidden; 
+    text-overflow: ellipsis; /* Adds '...' to long file names */
+}
+
+/* --- COLUMN WIDTH CONTROL (Library ONLY) --- */
+/* Scoped to .lib-table so it never affects the analysis view */
+.lib-table th:nth-child(1), .lib-table td:nth-child(1) { width: auto; text-align: left; }
+.lib-table th:nth-child(2), .lib-table td:nth-child(2) { width: 110px; text-align: center; }
+.lib-table th:nth-child(3), .lib-table td:nth-child(3) { width: 140px; text-align: center; }
+.lib-table th:last-child, .lib-table td:last-child { width: 80px; text-align: right; overflow: visible; }
+
+/* General table formatting (Headers/Colors) */
+th { 
+    background-color: #2c3e50; 
+    color: white; 
+    font-weight: bold; 
+    text-transform: uppercase;
+    padding: 10px;
+}
+
+/* Restore the styling for the analysis table cells */
+.table-container td {
+    padding: 8px 12px;
+    text-align: right;
+    white-space: nowrap;
+}
+
+/* Export Button */
+.lib-row-btn.exp { 
+    color: #3498db; 
+    padding: 0 6px;
+    min-width: 24px;
+}
+.lib-row-btn.exp:hover { background: #3498db; color: white; border-color: #2980b9; }
+
+/* Delete Button (Centered Minus) */
+.lib-row-btn.del { 
+    color: #e74c3c; 
+    width: 18px; /* Square button */
+    font-size: 16px; /* Larger font for the minus */
+    padding: 0;
+    line-height: 0; /* Critical for centering the symbol vertically */
+    padding-bottom: 2px; /* Micro-adjustment to lift the minus slightly */
+}
+.lib-row-btn.del:hover { background: #e74c3c; color: white; border-color: #c0392b; }
+
+.lib-meta-cell { color: #95a5a6; }
+
+.lib-file-name {
+    display: block;
+    color: #3498db;
+    cursor: pointer;
+    font-weight: 500;
+    width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.lib-file-name:hover { text-decoration: underline; }
+
+.btn-show-more {
+    display: block; width: 100%; background: none; border: 1px dashed #bdc3c7; color: #7f8c8d;
+    padding: 5px; font-size: 11px; cursor: pointer; border-radius: 4px; margin-top: 5px;
+}
+.btn-show-more:hover { background: #f8f9fa; border-color: #7f8c8d; }
+.empty-msg { text-align: center; color: #bdc3c7; font-style: italic; padding: 20px; }
 
 /* --- Detailed Info Section --- */
 .file-info-container {
@@ -208,243 +362,128 @@ tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-rig
     display: none;
 }
 
-/* --- Compact Status Buttons & Import --- */
+/* --- Compact Status Buttons & Import (Aligned Grid Layout) --- */
 .library-status-bar {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 1fr; /* Exact match to upload-grid */
+    gap: 20px; /* Exact match to upload-grid gap */
     width: 100%;
-    gap: 15px;
-    cursor: pointer;
+    margin-bottom: 0;
+}
+
+/* Sub-containers to hold button + badge pairs */
+.status-bar-group {
+    display: flex;
+    gap: 10px; /* Gap between small button and big badge */
+    min-width: 0; /* Prevents flex overflow issues */
 }
 
 /* Base Style for ALL Badges */
 .status-badge {
     display: flex;
-    flex-direction: row; 
     align-items: center;
-    padding: 8px 15px; 
+    padding: 0 15px; 
     background: #fff;
     border: 1px solid #e1e4e8; 
     border-radius: 6px;
     transition: all 0.2s ease;
-    min-height: 36px;
+    height: 40px; /* Fixed height for perfect alignment */
     position: relative;
+    box-sizing: border-box;
 }
 
-/* -- VARIANT 1: The big Status Boxes (Shot/Profile) -- */
+/* Main Status Boxes (Shot/Profile) fill remaining space */
 .status-badge.shot,
 .status-badge.profile {
-    flex: 5; /* Takes 10x the space of import button */
+    flex-grow: 1; /* Takes all remaining space in the group */
     justify-content: space-between;
-    padding-right: 15px; 
+    min-width: 0; /* Allows text truncation */
 }
 
-/* Default Hover (Empty State) */
+/* Hover Effects */
 .status-badge.shot:hover,
 .status-badge.profile:hover {
     border-color: #bdc3c7;
     background: #fdfdfd;
+    cursor: pointer;
 }
 
-/* --- LOADED STATE (Green theme when content is loaded) --- */
+/* Loaded State (Green) */
 .status-badge.loaded {
     background-color: #f0fdf4;
     border-color: #2ecc71;
     color: #27ae60;
 }
+.status-badge.loaded .status-value { color: #27ae60; }
 
-.status-badge.loaded .status-value {
-    color: #27ae60; /* Green Text */
-}
-
-/* --- MISMATCH STATE (Orange warning) --- */
+/* Mismatch State (Orange) */
 .status-badge.mismatch {
-    background-color: #fff8e1; /* Light Orange/Yellow background */
-    border-color: #f39c12;     /* Strong Orange Border */
+    background-color: #fff8e1;
+    border-color: #f39c12;
     color: #e67e22;
 }
+.status-badge.mismatch .status-value { color: #d35400; }
 
-.status-badge.mismatch .status-value {
-    color: #d35400; /* Darker orange text for readability */
-}
-
-/* Optional: Warning Icon style if we add one inside the badge */
-.warning-icon {
-    margin-right: 6px;
-    font-size: 1.2em;
-    vertical-align: middle;
-}
-
-/* -- VARIANT 2: The Left Container (Logo & Import layered) -- */
-.status-badge.left-container {
-    flex: 1; /* Small width */
-    position: relative; /* Needed for absolute children */
-    background: #fff;
-    border: 1px solid transparent; /* Invisible border initially so size matches */
-    padding: 0; /* Remove padding to let children fill space */
-    overflow: hidden;
-}
-
-/* -- VARIANT 3: The Stats Button (Right Side) -- */
+/* Small Buttons (Import/Logo & Stats) - Fixed Width */
+.status-badge.left-container,
 .status-badge.stats-action {
-    flex: 1; /* Same width as Import/Left Container */
+    flex: 0 0 60px; /* Fixed width for symmetry */
+    padding: 0;
     justify-content: center;
-    background: #fff;
-    border: 1px solid #3498db; 
+    border: 1px solid #3498db;
     color: #3498db;
     font-weight: 600;
-    font-size: 0.85em;
-    text-transform: uppercase;
-    white-space: nowrap;
+    font-size: 0.8em; /* Slightly smaller text */
     cursor: pointer;
 }
 
-.status-badge.stats-action:hover {
-    background: #3498db;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 6px rgba(52, 152, 219, 0.1);
-}
-
-/* Common styles for both layers to center them */
-.header-app-logo,
-.header-import-btn {
-    position: absolute;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    transition: all 0.4s ease-in-out; /* Smooth cross-fade */
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-/* --- LAYER A: The Logo (Default State) --- */
-.header-app-logo {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1); /* Normal size */
-    max-height: 28px; /* Adjust to fit nicely */
-    width: auto;
-    pointer-events: none; /* Clicks go through */
-}
-
-/* --- LAYER B: The Import Button (Hidden State) --- */
-.header-import-btn {
-    opacity: 0;
-    pointer-events: none; /* Not clickable when hidden */
-    transform: translate(-50%, -30%); /* Slight offset for entry animation */
-    
-    /* Button Styling */
-    color: #3498db;
-    font-weight: 600;
-    font-size: 0.85em;
-    text-transform: uppercase;
-    white-space: nowrap;
-    background: rgba(255, 255, 255, 0.9); /* Slight background to cover logo perfectly */
-}
-
-/* ====== THE SWITCH (When scrolled down) ====== */
-.sticky-library-panel.is-stuck .status-badge.left-container {
-     border-color: #3498db; /* Blue border appears */
-}
-
-/* 1. Hide Logo */
-.sticky-library-panel.is-stuck .header-app-logo {
-    opacity: 0;
-    transform: translate(-50%, -70%) scale(0.9); /* Shrink and move up slightly */
-}
-
-/* 2. Show Button */
-.sticky-library-panel.is-stuck .header-import-btn {
-    opacity: 1;
-    pointer-events: auto; /* Make clickable */
-    transform: translate(-50%, -50%); /* Move to center */
-}
-
-/* Hover effect only works when button is visible */
-.sticky-library-panel.is-stuck .status-badge.left-container:hover {
-    background: #3498db;
-}
-.sticky-library-panel.is-stuck .status-badge.left-container:hover .header-import-btn {
-    color: white;
-}
-
-/* "floated" (is-stuck), if visable */
-.sticky-library-panel.is-stuck .status-badge.import-action {
-    opacity: 1;
-    visibility: visible;
-    cursor: pointer;
-}
-
-.status-badge.import-action:hover {
-    /* Hover if visable */
-    background: #fff; 
-    color: #3498db;
-}
-
-/* Hover Style if stuck */
-.sticky-library-panel.is-stuck .status-badge.import-action:hover {
-    background: #3498db;
-    color: white;
-}
-
-/* --- Badge Controls (Unload Button & Menu Icon) --- */
-.badge-controls {
-    display: flex;
-    align-items: center;
-    gap: 12px; /* Space between X and Menu Icon */
-    margin-left: auto;
-    flex-shrink: 0; /* Prevent shrinking */
-}
-
-/* Unload 'X' Button */
-.unload-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    color: #27ae60; /* Match the green theme */
-    font-weight: bold;
-    font-size: 16px;
-    transition: all 0.2s;
-    cursor: pointer;
-    line-height: 1;
-}
-
-.unload-btn:hover {
-    background: #e74c3c;
-    color: white;
-    transform: scale(1.1);
-}
-
-/* --- Pure CSS Menu Icon (Three Lines) --- */
-.css-menu-icon {
-    width: 14px;
-    height: 10px;
+/* Special handling for Left Container (Layers) */
+.status-badge.left-container {
     position: relative;
-    display: flex;
-    flex-direction: column;
-    justify-content: space-between;
-    opacity: 0.4;
+    border-color: transparent; /* Invisible border initially */
+    background: transparent;
+}
+.header-app-logo, .header-import-btn {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    transition: all 0.4s ease;
+    width: 100%; height: 100%;
+    display: flex; align-items: center; justify-content: center;
+}
+.header-app-logo { max-height: 28px; width: auto; pointer-events: none; }
+.header-import-btn {
+    opacity: 0; pointer-events: none;
+    background: #fff; border: 1px solid #3498db; border-radius: 6px;
+    transform: translate(-50%, -30%);
 }
 
-.css-menu-icon::before,
-.css-menu-icon::after,
-.css-menu-icon span {
-    content: '';
-    display: block;
-    width: 100%;
-    height: 2px;
-    background-color: #333; 
-    border-radius: 1px;
+/* Stuck State Logic */
+.sticky-library-panel.is-stuck .header-app-logo { opacity: 0; transform: translate(-50%, -70%) scale(0.9); }
+.sticky-library-panel.is-stuck .header-import-btn { opacity: 1; pointer-events: auto; transform: translate(-50%, -50%); }
+.status-badge.stats-action { background: #fff; text-transform: uppercase; }
+.status-badge.stats-action:hover, .header-import-btn:hover { background: #3498db; color: white; }
+
+.status-value {
+    font-size: 0.95em; font-weight: 600; color: #7f8c8d;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-right: 10px;
 }
 
-.status-badge:hover .css-menu-icon {
-    opacity: 0.8;
+.badge-controls { display: flex; align-items: center; gap: 8px; margin-left: auto; flex-shrink: 0; }
+.unload-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 18px; height: 18px; border-radius: 50%;
+    color: #27ae60; font-weight: bold; font-size: 14px; cursor: pointer;
 }
+.unload-btn:hover { background: #e74c3c; color: white; }
+
+.css-menu-icon {
+    width: 12px; height: 10px; display: flex; flex-direction: column; justify-content: space-between; opacity: 0.4;
+}
+.css-menu-icon span, .css-menu-icon::before, .css-menu-icon::after {
+    content: ''; display: block; width: 100%; height: 2px; background: #333;
+}
+
 
 /* --- Responsive Library Grid --- */
 .library-grid {
@@ -452,75 +491,27 @@ tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-rig
     grid-template-columns: repeat(auto-fit, minmax(500px, 1fr)); 
     gap: 20px;
     margin-top: 15px;
-    animation: fadeIn 0.3s ease-in-out;
 }
 
-@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-
-/* --- Library Header (Sort & Actions) --- */
+/* --- Library Header --- */
 .lib-header {
-    display: flex;
-    justify-content: space-between; /* Pushes Sort to Left, Actions to Right */
-    align-items: center;
-    margin-bottom: 8px;
-    padding: 0 2px;
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 8px; padding: 0 2px;
 }
-
-.lib-header h4 {
-    display: none; /* Hide the title as requested */
-}
-
-/* Button Groups */
-.header-left, .header-right {
-    display: flex;
-    gap: 5px;
-    align-items: center;
-}
-
-/* Label for Sort group */
-.sort-label {
-    font-size: 10px;
-    font-weight: bold;
-    color: #bdc3c7;
-    text-transform: uppercase;
-    margin-right: 4px;
-}
-
-/* Base Button Style */
+.header-left, .header-right { display: flex; gap: 5px; align-items: center; }
+.sort-label { font-size: 10px; font-weight: bold; color: #bdc3c7; text-transform: uppercase; margin-right: 4px; }
 .btn-sort, .btn-export-all, .btn-clear-all {
-    border-radius: 4px;
-    font-size: 10px;
-    cursor: pointer;
-    transition: all 0.2s;
-    font-weight: 600;
-    padding: 4px 8px;
-    text-transform: uppercase;
+    border-radius: 4px; font-size: 10px; cursor: pointer; padding: 4px 8px; text-transform: uppercase; font-weight: 600;
 }
-
-/* Sort Buttons (Gray/Light) */
-.btn-sort {
-    background: #f8f9fa;
-    border: 1px solid #dcdde1;
-    color: #7f8c8d;
-}
+.btn-sort { background: #f8f9fa; border: 1px solid #dcdde1; color: #7f8c8d; }
 .btn-sort:hover { border-color: #3498db; color: #3498db; }
-
-/* Action Buttons (Colors) */
-.btn-export-all {
-    background: #fff;
-    border: 1px solid #3498db;
-    color: #3498db;
-}
+.btn-export-all { background: #fff; border: 1px solid #3498db; color: #3498db; }
 .btn-export-all:hover { background: #3498db; color: white; }
-
-.btn-clear-all {
-    background: #fff;
-    border: 1px solid #e74c3c;
-    color: #e74c3c;
-}
+.btn-clear-all { background: #fff; border: 1px solid #e74c3c; color: #e74c3c; }
 .btn-clear-all:hover { background: #e74c3c; color: white; }
 
-/* --- Optimized Library Table (Fixed Layout) --- */
+
+/* --- Optimized Library Table (Fixed Layout & No Scroll) --- */
 .lib-list-container {
     max-height: 180px;
     overflow-y: auto;
@@ -535,7 +526,7 @@ tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-rig
     width: 100%;
     border-collapse: collapse;
     font-size: 11px;
-    table-layout: fixed; /* Strict column width control */
+    table-layout: fixed; /* STRICT WIDTH CONTROL */
 }
 
 .lib-table th, .lib-table td {
@@ -543,136 +534,70 @@ tfoot .phase-col { background-color: #eaeded !important; z-index: 15; border-rig
     border-bottom: 1px solid #f1f1f1;
     vertical-align: middle;
     white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    overflow: hidden; /* Hide overflow */
+    text-overflow: ellipsis; /* Add dots ... */
 }
 
 .lib-table th {
-    background: #f8f9fa;
-    color: #7f8c8d;
-    font-weight: bold;
-    text-transform: uppercase;
-    position: sticky;
-    top: 0;
-    z-index: 2;
-    text-align: center;
+    background: #f8f9fa; color: #7f8c8d; font-weight: bold; text-transform: uppercase;
+    position: sticky; top: 0; z-index: 2; text-align: center;
 }
 
-/* --- COLUMN WIDTH DEFINITIONS --- */
-/* 1. Name: Flexible but controlled with percentages */
-.lib-table th:nth-child(1), 
-.lib-table td:nth-child(1) {
-    width: 45%; 
+/* --- COLUMN WIDTHS --- */
+/* 1. Name: Flexible (takes remaining space) but truncated */
+.lib-table th:nth-child(1), .lib-table td:nth-child(1) {
+    width: auto; 
     text-align: left;
 }
 
-/* 2. Date: Fixed Width */
-.lib-table th:nth-child(2), 
-.lib-table td:nth-child(2) {
-    width: 25%; 
+/* 2. Date: Fixed width, never shrinks */
+.lib-table th:nth-child(2), .lib-table td:nth-child(2) {
+    width: 110px; 
     text-align: center;
 }
 
-/* 3. Profile (only shots): Fixed Width */
-.lib-table th:nth-child(3), 
-.lib-table td:nth-child(3) {
-    width: 20%; 
+/* 3. Profile (Shots only): Fixed width */
+.lib-table th:nth-child(3), .lib-table td:nth-child(3) {
+    width: 140px; 
     text-align: center;
 }
 
-/* 4. Actions: Fixed Width */
-.lib-table th:last-child, 
-.lib-table td:last-child {
-    width: 10%;
+/* 4. Actions: Fixed width, right aligned, NO overflow hidden for tooltips */
+.lib-table th:last-child, .lib-table td:last-child {
+    width: 80px; 
     text-align: right;
     overflow: visible; 
 }
 
-/* Content Styles */
+/* Helper Classes */
 .lib-meta-cell { color: #7f8c8d; }
-
-.lib-file-name {
-    display: block;
-    color: #3498db;
-    cursor: pointer;
-    font-weight: 500;
-}
+.lib-file-name { display: block; color: #3498db; cursor: pointer; font-weight: 500; }
 .lib-file-name:hover { text-decoration: underline; }
 
-/* Action Buttons */
-.lib-action-cell {
-    display: flex;
-    justify-content: flex-end;
-    align-items: center;
-    gap: 4px;
-}
-
+.lib-action-cell { display: flex; justify-content: flex-end; gap: 4px; }
 .lib-row-btn {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    height: 18px;
-    padding: 0 6px;
-    border-radius: 3px;
-    font-size: 9px;
-    font-weight: bold;
-    cursor: pointer;
-    border: 1px solid #dcdde1;
-    background: #fff;
-    text-transform: uppercase;
-    transition: all 0.2s;
-    line-height: 1;
-    color: #555;
+    display: inline-flex; align-items: center; justify-content: center;
+    height: 18px; padding: 0 6px; border-radius: 3px; font-size: 9px; font-weight: bold;
+    cursor: pointer; border: 1px solid #dcdde1; background: #fff; text-transform: uppercase;
 }
-
-.lib-row-btn.exp { color: #3498db; min-width: 25px; }
-.lib-row-btn.exp:hover { background: #3498db; color: white; border-color: #2980b9; }
-
-.lib-row-btn.del { color: #e74c3c; min-width: 20px; font-size: 14px; font-weight: 900; }
-.lib-row-btn.del:hover { background: #e74c3c; color: white; border-color: #c0392b; }
+.lib-row-btn.exp { color: #3498db; } .lib-row-btn.exp:hover { background: #3498db; color: white; }
+.lib-row-btn.del { color: #e74c3c; font-size: 14px; } .lib-row-btn.del:hover { background: #e74c3c; color: white; }
 
 .btn-show-more {
-    display: block;
-    width: 100%;
-    background: none;
-    border: 1px dashed #bdc3c7;
-    color: #7f8c8d;
-    padding: 5px;
-    font-size: 11px;
-    cursor: pointer;
-    border-radius: 4px;
-    margin-top: 5px;
-    transition: all 0.2s;
+    display: block; width: 100%; background: none; border: 1px dashed #bdc3c7; color: #7f8c8d;
+    padding: 5px; font-size: 11px; cursor: pointer; border-radius: 4px; margin-top: 5px;
 }
-.btn-show-more:hover { background: #f8f9fa; color: #34495e; border-color: #7f8c8d; }
-
+.btn-show-more:hover { background: #f8f9fa; border-color: #7f8c8d; }
 .empty-msg { text-align: center; color: #bdc3c7; font-style: italic; padding: 20px; }
 
-/* --- Footer & Scroll Button --- */
-.library-footer {
-    display: flex;
-    justify-content: center;
-    margin-top: 15px;
-    padding-top: 10px;
-    border-top: 1px dashed #eee;
-}
-
+/* Footer */
+.library-footer { display: flex; justify-content: center; margin-top: 15px; padding-top: 10px; border-top: 1px dashed #eee; }
 .btn-close-panel {
-    background: #f8f9fa;
-    border: 1px solid #dcdde1;
-    color: #7f8c8d;
-    padding: 6px 20px;
-    border-radius: 20px;
-    font-size: 11px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    background: #f8f9fa; border: 1px solid #dcdde1; color: #7f8c8d;
+    padding: 6px 20px; border-radius: 20px; font-size: 11px; font-weight: bold; cursor: pointer; text-transform: uppercase;
 }
 .btn-close-panel:hover { background: #e74c3c; color: white; border-color: #e74c3c; }
 
-@media (max-width: 600px) {
-    .library-status-bar { flex-direction: column; gap: 5px; }
-    .status-value { max-width: 100%; }
+@media (max-width: 800px) {
+    .library-status-bar { grid-template-columns: 1fr; } /* Stack on mobile */
 }
