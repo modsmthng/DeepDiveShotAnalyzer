@@ -4,8 +4,13 @@ Deep Dive Shot Analyzer
 by modsmthng
 *Used to develop Automatic Pro v3*
 
+**How to use:**
 https://modsmthng.github.io/DeepDiveShotAnalyzer/
 or simply download the project and open the index.html
+
+<img width="1661" height="873" alt="SCR-20260204-cftq" src="https://github.com/user-attachments/assets/93bfcd58-a7d2-4119-b06f-700033b7b7ac" />
+<img width="1658" height="854" alt="SCR-20260204-cfxb" src="https://github.com/user-attachments/assets/1ffe328f-db62-4379-a4d4-162e9af75dfe" />
+<img width="1666" height="938" alt="SCR-20260204-chfn" src="https://github.com/user-attachments/assets/33d5d732-316a-4868-80e7-6f8053d7405d" />
 
 # DISCLAIMER
 The code has been optimized and commented using AI.
