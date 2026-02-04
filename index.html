@@ -26,17 +26,12 @@
         </div>
     </header>
     
-    <div class="upload-grid">
-        <div class="drop-zone" id="drop-zone-shot">
-            <h3>1. Shot JSON</h3>
-            <span class="drop-info" id="label-shot">Drag & Drop or Click</span>
-            <input type="file" id="file-shot" style="display: none;" accept=".json" multiple>
-        </div>
-        <div class="drop-zone" id="drop-zone-profile">
-            <button class="remove-file-btn" id="remove-profile-btn" onclick="removeProfile(event)">✕</button>
-            <h3>2. Profile JSON (Optional)</h3>
-            <span class="drop-info" id="label-profile">Drag & Drop or Click</span>
-            <input type="file" id="file-profile" style="display: none;" accept=".json" multiple>
+    <div class="unified-drop-container">
+        <div id="drop-zone-unified" class="drop-zone unified">
+            <input type="file" id="file-unified" multiple accept=".json" style="display: none;">
+            <div class="drop-content">
+                Drag & Drop Shots and Profiles Here - or Click
+            </div>
         </div>
     </div>
 
