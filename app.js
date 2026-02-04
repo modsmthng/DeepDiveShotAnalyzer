@@ -117,30 +117,23 @@ window.unloadProfile = (e) => {
 
 /**
  * Core loading logic for Shots 
- * FEATURE: Auto-loads the matching profile from library if it exists.
+ * FEATURE: Auto-loads the matching profile from library if it exists using JSON labels.
  */
 function loadShot(data, name) {
     currentShotData = data;
     currentShotName = cleanName(name); 
     
     // --- AUTO-MATCH LOGIC START ---
-    // Check if the shot refers to a specific profile
     if (data.profile) {
         try {
-            // Get all saved profiles
             const profiles = JSON.parse(localStorage.getItem(DB_KEYS.PROFILES) || '[]');
+            const targetProfileLabel = data.profile.toLowerCase(); // Reference inside shot JSON
             
-            // Normalize names for comparison (remove .json, lowercase)
-            const targetName = cleanName(data.profile).toLowerCase();
-            
-            // Find the matching profile in the library
-            const match = profiles.find(p => cleanName(p.name).toLowerCase() === targetName);
+            // Match against the 'name' stored in library (which is now the JSON label)
+            const match = profiles.find(p => p.name.toLowerCase() === targetProfileLabel);
 
             if (match) {
-                console.log(`Auto-matched Profile found: ${match.name}`);
-                // Load the profile. 
-                // NOTE: loadProfile() calls refreshLibraryUI() and checkAndAnalyze(),
-                // so we return immediately to avoid double-rendering/analyzing.
+                console.log(`Auto-matched Profile found by label: ${match.name}`);
                 loadProfile(match.data, match.name);
                 return; 
             }
@@ -150,17 +143,18 @@ function loadShot(data, name) {
     }
     // --- AUTO-MATCH LOGIC END ---
 
-    // If no match found (or no profile reference), proceed as normal
     refreshLibraryUI(); 
     checkAndAnalyze();
 }
 
 /**
  * Core loading logic for Profiles
+ * Now uses the 'label' from JSON as the primary name
  */
 function loadProfile(data, name) {
     currentProfileData = data;
-    currentProfileName = cleanName(name); 
+    // Use the JSON label if available, otherwise fallback to filename
+    currentProfileName = data.label || cleanName(name); 
 
     refreshLibraryUI(); 
     checkAndAnalyze();
@@ -168,14 +162,20 @@ function loadProfile(data, name) {
 
 /**
  * Persists JSON data with extracted metadata
+ * PROFILE CHANGE: Uses data.label for the entry name if available.
  */
 function saveToLibrary(collection, fileName, data) {
     try {
         const library = JSON.parse(localStorage.getItem(collection) || '[]');
-        const existingIndex = library.findIndex(item => item.name === fileName);
+        
+        // For profiles, we prefer the 'label' from JSON as the unique identifier name
+        const displayName = (collection === DB_KEYS.PROFILES && data.label) ? data.label : fileName;
+        
+        const existingIndex = library.findIndex(item => item.name === displayName);
         
         const meta = {
-            name: fileName,
+            name: displayName,
+            fileName: fileName, // Keep original filename as backup
             saveDate: Date.now(), 
             shotDate: data.timestamp ? data.timestamp * 1000 : Date.now(), 
             profileName: data.profile || "Manual/Unknown",
@@ -305,37 +305,29 @@ function refreshLibraryUI() {
     let shots = getSortedLibrary(DB_KEYS.SHOTS);
     let profiles = getSortedLibrary(DB_KEYS.PROFILES);
 
-    // 2. AUTO-MATCH SORTING LOGIC
-    // Logic: If a Shot is loaded, move the matching Profile to top.
+    // 2. AUTO-MATCH SORTING LOGIC (Using JSON Labels)
     if (currentShotData && currentShotData.profile) {
-        const targetProfile = cleanName(currentShotData.profile).toLowerCase();
+        const targetLabel = currentShotData.profile.toLowerCase();
         
         profiles.sort((a, b) => {
-            const aName = cleanName(a.name).toLowerCase();
-            const bName = cleanName(b.name).toLowerCase();
-            
-            // Check for exact matches
-            const aIsMatch = aName === targetProfile;
-            const bIsMatch = bName === targetProfile;
-            
-            // Move match to top (-1), keep others in current order (0)
+            const aName = a.name.toLowerCase(); // This is now the label
+            const bName = b.name.toLowerCase();
+            const aIsMatch = aName === targetLabel;
+            const bIsMatch = bName === targetLabel;
             if (aIsMatch && !bIsMatch) return -1;
             if (!aIsMatch && bIsMatch) return 1;
             return 0;
         });
     }
 
-    // Logic: If a Profile is loaded, move matching Shots to top.
     if (currentProfileName) {
-        const targetProfileName = cleanName(currentProfileName).toLowerCase();
+        const activeLabel = currentProfileName.toLowerCase();
 
         shots.sort((a, b) => {
-            const aProf = cleanName(a.profileName || "").toLowerCase();
-            const bProf = cleanName(b.profileName || "").toLowerCase();
-
-            const aIsMatch = aProf === targetProfileName;
-            const bIsMatch = bProf === targetProfileName;
-
+            const aProf = (a.profileName || "").toLowerCase();
+            const bProf = (b.profileName || "").toLowerCase();
+            const aIsMatch = aProf === activeLabel;
+            const bIsMatch = bProf === activeLabel;
             if (aIsMatch && !bIsMatch) return -1;
             if (!aIsMatch && bIsMatch) return 1;
             return 0;
