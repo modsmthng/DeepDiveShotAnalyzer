@@ -274,45 +274,107 @@ function saveToLibrary(collection, fileName, data) {
     } catch (e) { console.error("Storage Error:", e); }
 }
 
-/**
- * Global state for current sorting
- */
-let currentSort = {
-    SHOTS: 'saveDate',
-    PROFILES: 'name',
-    order: 'desc' 
+// --- Sorting & Searching State ---
+
+// Stores search query string for each collection
+let librarySearch = {
+    [DB_KEYS.SHOTS]: '',
+    [DB_KEYS.PROFILES]: ''
 };
 
-window.updateSort = (collection, key) => {
-    if (currentSort[collection] === key) {
-        currentSort.order = currentSort.order === 'asc' ? 'desc' : 'asc';
+// Default Sort: Shots by Date (Newest first)
+let currentSort = {
+    [DB_KEYS.SHOTS]: { key: 'shotDate', order: 'desc' },
+    [DB_KEYS.PROFILES]: { key: 'name', order: 'asc' }
+};
+
+/**
+ * Update Search Term
+ */
+window.updateLibrarySearch = (collection, value) => {
+    librarySearch[collection] = value.toLowerCase();
+    refreshLibraryUI();
+};
+
+/**
+ * Handle Sorting from Headers (Click) or Dropdown
+ */
+window.updateLibrarySort = (collection, key, specificOrder = null) => {
+    const current = currentSort[collection];
+    
+    if (specificOrder) {
+        // Dropdown explicit selection
+        current.key = key;
+        current.order = specificOrder;
     } else {
-        currentSort[collection] = key;
-        currentSort.order = 'desc';
+        // Table Header Click (Toggle)
+        if (current.key === key) {
+            current.order = current.order === 'asc' ? 'desc' : 'asc';
+        } else {
+            current.key = key;
+            current.order = 'desc'; // Default new sort to desc
+        }
     }
     refreshLibraryUI();
 };
 
+/**
+ * Retrieve Library items: Filtered AND Sorted
+ */
 function getSortedLibrary(collection) {
-    const library = JSON.parse(localStorage.getItem(collection) || '[]');
-    const key = currentSort[collection];
-    const order = currentSort.order === 'asc' ? 1 : -1;
+    const raw = JSON.parse(localStorage.getItem(collection) || '[]');
+    const searchTerm = librarySearch[collection];
+    const { key, order } = currentSort[collection];
+    const orderMult = order === 'asc' ? 1 : -1;
 
-    return library.sort((a, b) => {
-        let valA = a[key] || '';
-        let valB = b[key] || '';
+    // 1. Filter
+    let items = raw;
+    if (searchTerm) {
+        items = raw.filter(item => {
+            const n = (item.name || '').toLowerCase();
+            const p = (item.profileName || '').toLowerCase();
+            return n.includes(searchTerm) || p.includes(searchTerm);
+        });
+    }
+
+    // 2. Sort
+    return items.sort((a, b) => {
+        let valA = a[key];
+        let valB = b[key];
+
+        // Handle specific fields
+        if (key === 'data.rating') {
+             valA = a.data?.rating || 0;
+             valB = b.data?.rating || 0;
+        } else if (key === 'duration') {
+            valA = parseFloat(a.duration || 0);
+            valB = parseFloat(b.duration || 0);
+        } else {
+            // Default string/number handling
+            valA = valA || '';
+            valB = valB || '';
+        }
+
         if (typeof valA === 'string') valA = valA.toLowerCase();
         if (typeof valB === 'string') valB = valB.toLowerCase();
-        if (valA < valB) return -1 * order;
-        if (valA > valB) return 1 * order;
+
+        if (valA < valB) return -1 * orderMult;
+        if (valA > valB) return 1 * orderMult;
         return 0;
     });
 }
 
 /**
- * Library UI Renderer
+ * Library UI Renderer (With Focus State Preservation)
  */
 function refreshLibraryUI() {
+    // --- 1. CAPTURE FOCUS STATE (Before Re-render) ---
+    // We need to save which element has focus and where the cursor is,
+    // because re-rendering destroys the DOM elements.
+    const activeEl = document.activeElement;
+    const activeId = activeEl ? activeEl.id : null;
+    const cursorPosition = (activeId && activeEl.type === 'text') ? activeEl.selectionStart : null;
+
     let stickyPanel = document.getElementById('sticky-library-panel');
     
     if (!stickyPanel) {
@@ -320,19 +382,16 @@ function refreshLibraryUI() {
         stickyPanel.id = 'sticky-library-panel';
         stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
 
-        // --- INSERTION LOGIC: Place directly after the main header ---
+        // Insert directly after the main header
         const header = document.getElementById('main-header'); 
         const container = document.querySelector('.container');
         
         if (header && header.nextSibling) {
-            // Insert after header
             header.parentNode.insertBefore(stickyPanel, header.nextSibling);
         } else if (container) {
-            // Fallback: Insert at top of container (if header logic fails)
             container.insertBefore(stickyPanel, container.firstChild);
         }
     } else {
-        // Update class if element already exists
         stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
     }
 
@@ -340,66 +399,97 @@ function refreshLibraryUI() {
     let profiles = getSortedLibrary(DB_KEYS.PROFILES);
 
     // Auto-match sorting logic
-    if (currentShotData && currentShotData.profile) {
+    if (currentShotData && currentShotData.profile && !librarySearch[DB_KEYS.PROFILES]) {
         const target = currentShotData.profile.toLowerCase();
         profiles.sort((a, b) => a.name.toLowerCase() === target ? -1 : (b.name.toLowerCase() === target ? 1 : 0));
     }
-    if (currentProfileName) {
-        const target = currentProfileName.toLowerCase();
-        shots.sort((a, b) => (a.profileName || "").toLowerCase() === target ? -1 : (b.profileName || "").toLowerCase() === target ? 1 : 0);
-    }
 
-    // Helper to generate Sort Icon SVG based on state
+    // Helper: Sort Icon
     const getSortIcon = (colType, colKey) => {
-        const isActive = currentSort[colType] === colKey;
-        const isAsc = currentSort.order === 'asc';
+        const active = currentSort[colType];
+        const isActive = active.key === colKey;
         const opacity = isActive ? 1 : 0.2;
-        const rotation = (isActive && isAsc) ? 'rotate(180)' : 'rotate(0)';
+        const rotation = (isActive && active.order === 'asc') ? 'rotate(180)' : 'rotate(0)';
         const color = isActive ? '#3498db' : '#95a5a6';
         
-        // Simple Triangle SVG
         return `<svg width="8" height="8" viewBox="0 0 10 10" style="margin-left:5px; opacity:${opacity}; transform:${rotation}; transition: transform 0.2s;">
             <path d="M5 10L0 0L10 0L5 10Z" fill="${color}"/>
         </svg>`;
     };
 
+    // Helper: Build Sort Dropdown Options
+    const buildSortOptions = () => {
+        const s = currentSort[DB_KEYS.SHOTS];
+        const val = `${s.key}-${s.order}`;
+        return `
+            <select class="lib-sort-select" onchange="const [k, o] = this.value.split('-'); window.updateLibrarySort('${DB_KEYS.SHOTS}', k, o);">
+                <option value="shotDate-desc" ${val === 'shotDate-desc' ? 'selected' : ''}>Date: Newest First</option>
+                <option value="shotDate-asc" ${val === 'shotDate-asc' ? 'selected' : ''}>Date: Oldest First</option>
+                
+                <option value="name-asc" ${val === 'name-asc' ? 'selected' : ''}>Name: A-Z</option>
+                <option value="name-desc" ${val === 'name-desc' ? 'selected' : ''}>Name: Z-A</option>
+                
+                <option value="data.rating-desc" ${val === 'data.rating-desc' ? 'selected' : ''}>Rating: High to Low</option>
+                <option value="data.rating-asc" ${val === 'data.rating-asc' ? 'selected' : ''}>Rating: Low to High</option>
+                
+                <option value="duration-desc" ${val === 'duration-desc' ? 'selected' : ''}>Duration: Longest</option>
+                <option value="duration-asc" ${val === 'duration-asc' ? 'selected' : ''}>Duration: Shortest</option>
+            </select>
+        `;
+    };
+
     const createSection = (title, items, type) => {
         const isExpanded = libraryExpanded[type];
+        const isShots = type === DB_KEYS.SHOTS;
         
-        // --- ICONS (SVG Strings) ---
+        // Icons
         const iconExport = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>`;
         const iconTrash = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>`;
 
+        // UPDATE: Added ID to input for focus tracking: id="search-${type}"
         return `
             <div class="library-section">
-                <div class="lib-header">
-                    <div class="header-left">
-                        <span class="sort-label">${title} <span style="color:#bdc3c7; font-weight:400;">(${items.length})</span></span>
+                <div class="lib-toolbar">
+                    <div class="lib-toolbar-left">
+                        <input type="text" 
+                               id="search-${type}"
+                               class="lib-search" 
+                               placeholder="Search ${title}..." 
+                               value="${librarySearch[type]}" 
+                               oninput="window.updateLibrarySearch('${type}', this.value)">
+                        
+                        ${isShots ? buildSortOptions() : ''}
                     </div>
-                    <div class="header-right">
-                        <button class="btn-export-all" onclick="window.exportFullLibrary('${type}')">Export All</button>
-                        <button class="btn-clear-all" onclick="window.clearFullLibrary('${type}')">Delete All</button>
+                    
+                    <div class="lib-toolbar-right">
+                        <button class="toolbar-icon-btn exp" title="Export All" onclick="window.exportFullLibrary('${type}')">
+                            ${iconExport}
+                        </button>
+                        <button class="toolbar-icon-btn del" title="Delete All" onclick="window.clearFullLibrary('${type}')">
+                            ${iconTrash}
+                        </button>
                     </div>
                 </div>
+
                 <div class="lib-list-container ${isExpanded ? 'expanded' : ''}">
                     <table class="lib-table">
                         <thead>
                             <tr>
-                                <th onclick="window.updateSort('${type}', 'name')">Name ${getSortIcon(type, 'name')}</th>
-                                <th onclick="window.updateSort('${type}', 'shotDate')">Date ${getSortIcon(type, 'shotDate')}</th>
-                                ${type === DB_KEYS.SHOTS ? `<th onclick="window.updateSort('${type}', 'profileName')">Profile ${getSortIcon(type, 'profileName')}</th>` : ''}
+                                <th onclick="window.updateLibrarySort('${type}', 'name')">Name ${getSortIcon(type, 'name')}</th>
+                                <th onclick="window.updateLibrarySort('${type}', 'shotDate')">Date ${getSortIcon(type, 'shotDate')}</th>
+                                ${isShots ? `<th onclick="window.updateLibrarySort('${type}', 'profileName')">Profile ${getSortIcon(type, 'profileName')}</th>` : ''}
                                 <th style="cursor:default; text-align:right;">Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${items.map(item => {
+                            ${items.length === 0 ? `<tr><td colspan="4" class="empty-msg">No results found</td></tr>` : items.map(item => {
                                 const isMatch = (type === DB_KEYS.PROFILES && currentShotData && item.name.toLowerCase() === (currentShotData.profile || "").toLowerCase()) ||
                                                 (type === DB_KEYS.SHOTS && currentProfileName && (item.profileName || "").toLowerCase() === currentProfileName.toLowerCase());
                                 return `
                                     <tr style="${isMatch ? 'background-color: #f0fdf4; font-weight:600;' : ''}">
                                         <td title="${item.name}"><span class="lib-file-name" onclick="window.triggerLoad('${type}', '${item.name}')">${item.name}</span></td>
-                                        <td class="lib-meta-cell">${new Date(item.shotDate).toLocaleDateString()}</td>
-                                        ${type === DB_KEYS.SHOTS ? `<td class="lib-meta-cell">${item.profileName}</td>` : ''}
+                                        <td class="lib-meta-cell">${new Date(item.shotDate).toLocaleDateString()} ${new Date(item.shotDate).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</td>
+                                        ${isShots ? `<td class="lib-meta-cell">${item.profileName}</td>` : ''}
                                         <td>
                                             <div class="lib-action-cell">
                                                 <button class="icon-btn exp" title="Export JSON" onclick="window.exportSingleItem('${type}', '${item.name}')">${iconExport}</button>
@@ -428,7 +518,7 @@ function refreshLibraryUI() {
         }
     }
 
-    // --- HTML STRUCTURE (Symmetrical Badges) ---
+    // --- HTML Structure ---
     stickyPanel.innerHTML = `
         <div class="library-status-bar">
             <div class="status-bar-group">
@@ -467,6 +557,19 @@ function refreshLibraryUI() {
     }
 
     setupSmartImport();
+
+    // --- 2. RESTORE FOCUS STATE (After Re-render) ---
+    // Find the element by the ID we saved and restore focus and cursor position
+    if (activeId) {
+        const el = document.getElementById(activeId);
+        if (el) {
+            el.focus();
+            if (cursorPosition !== null) {
+                // Restore cursor position so you can type continuously
+                el.setSelectionRange(cursorPosition, cursorPosition);
+            }
+        }
+    }
 }
 
 /**
@@ -648,22 +751,69 @@ function renderControls() {
     attachLatencyListeners();
 }
 
-// Helpers
+// --- Action Helpers ---
+
 window.toggleStickyPanel = () => { isLibraryCollapsed = !isLibraryCollapsed; refreshLibraryUI(); };
+
 window.triggerLoad = (type, name) => {
     const entry = JSON.parse(localStorage.getItem(type) || '[]').find(i => i.name === name);
     if (entry) type === DB_KEYS.SHOTS ? loadShot(entry.data, entry.name) : loadProfile(entry.data, entry.name);
 };
+
 window.toggleLibraryExpand = (type) => { libraryExpanded[type] = !libraryExpanded[type]; refreshLibraryUI(); };
-window.deleteSingleItem = (col, name) => { if (confirm(`Delete ${name}?`)) { localStorage.setItem(col, JSON.stringify(JSON.parse(localStorage.getItem(col)).filter(i => i.name !== name))); refreshLibraryUI(); }};
-window.clearFullLibrary = (col) => { if (confirm("Clear all?")) { localStorage.setItem(col, "[]"); refreshLibraryUI(); }};
+
+window.deleteSingleItem = (col, name) => { 
+    if (confirm(`Delete "${name}"?`)) { 
+        const current = JSON.parse(localStorage.getItem(col) || '[]');
+        const filtered = current.filter(i => i.name !== name);
+        localStorage.setItem(col, JSON.stringify(filtered)); 
+        refreshLibraryUI(); 
+    }
+};
+
+window.clearFullLibrary = (col) => { 
+    const count = JSON.parse(localStorage.getItem(col) || '[]').length;
+    if (count === 0) return;
+    
+    if (confirm(`Are you sure you want to DELETE ALL ${count} items from ${col === DB_KEYS.SHOTS ? 'Shots' : 'Profiles'}? This cannot be undone.`)) { 
+        localStorage.setItem(col, "[]"); 
+        refreshLibraryUI(); 
+    }
+};
+
 window.exportSingleItem = (col, name) => {
     const item = JSON.parse(localStorage.getItem(col)).find(i => i.name === name);
+    if (!item) return;
+
+    const jsonStr = JSON.stringify(item.data, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
     const link = document.createElement('a');
-    link.href = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(item.data));
-    link.download = name; link.click();
+    link.href = url;
+    
+    // --- BUG FIX: Ensure .json extension ---
+    let safeName = name;
+    if (!safeName.toLowerCase().endsWith('.json')) {
+        safeName += '.json';
+    }
+    
+    link.download = safeName; 
+    link.click();
+    URL.revokeObjectURL(url);
 };
-window.exportFullLibrary = (col) => { JSON.parse(localStorage.getItem(col)).forEach((item, i) => setTimeout(() => window.exportSingleItem(col, item.name), i * 200)); };
+
+window.exportFullLibrary = (col) => { 
+    const items = JSON.parse(localStorage.getItem(col) || '[]');
+    if (items.length === 0) return;
+
+    if (confirm(`Export all ${items.length} items from ${col === DB_KEYS.SHOTS ? 'Shots' : 'Profiles'}?`)) {
+        // Stagger downloads to prevent browser blocking
+        items.forEach((item, i) => {
+            setTimeout(() => window.exportSingleItem(col, item.name), i * 300);
+        });
+    }
+};
 
 function toggleColumn(id) {
     const checked = document.getElementById(`chk-${id}`).checked;
