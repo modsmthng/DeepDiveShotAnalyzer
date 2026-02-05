@@ -310,7 +310,7 @@ function getSortedLibrary(collection) {
 }
 
 /**
- * Library UI Renderer (Updated with Sort Headers, SVG Icons, and Symmetrical Layout)
+ * Library UI Renderer
  */
 function refreshLibraryUI() {
     let stickyPanel = document.getElementById('sticky-library-panel');
@@ -318,14 +318,23 @@ function refreshLibraryUI() {
     if (!stickyPanel) {
         stickyPanel = document.createElement('div');
         stickyPanel.id = 'sticky-library-panel';
-        stickyPanel.className = 'sticky-library-panel';
-        const guideContainer = document.querySelector('.import-guide-container');
-        if (guideContainer && guideContainer.nextSibling) {
-            guideContainer.parentNode.insertBefore(stickyPanel, guideContainer.nextSibling);
-        }
-    }
+        stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
 
-    stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
+        // --- INSERTION LOGIC: Place directly after the main header ---
+        const header = document.getElementById('main-header'); 
+        const container = document.querySelector('.container');
+        
+        if (header && header.nextSibling) {
+            // Insert after header
+            header.parentNode.insertBefore(stickyPanel, header.nextSibling);
+        } else if (container) {
+            // Fallback: Insert at top of container (if header logic fails)
+            container.insertBefore(stickyPanel, container.firstChild);
+        }
+    } else {
+        // Update class if element already exists
+        stickyPanel.className = isLibraryCollapsed ? 'sticky-library-panel collapsed' : 'sticky-library-panel';
+    }
 
     let shots = getSortedLibrary(DB_KEYS.SHOTS);
     let profiles = getSortedLibrary(DB_KEYS.PROFILES);

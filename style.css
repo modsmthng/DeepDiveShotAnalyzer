@@ -21,9 +21,11 @@ body {
 /* --- Header Section --- */
 header { 
     text-align: center; 
-    margin-bottom: 40px; 
-    border-bottom: 1px solid #eee; 
+    margin-bottom: 0; /* Changed: Removed bottom margin to connect with panel */
+    border-bottom: none; /* Changed: Removed separator line */
     padding-bottom: 20px; 
+    position: relative;
+    z-index: 101; /* Ensure header stays above if needed */
 }
 
 h1 { 
@@ -69,60 +71,43 @@ h1 {
 .author-line { font-size: 1em; color: #7f8c8d; margin-top: 5px; font-weight: 500; }
 .app-description { margin-top: 5px; color: #95a5a6; font-size: 0.9em; font-style: italic; }
 
-/* --- Import Guide Styling (Clean & Aligned) --- */
-.import-guide-container {
-    width: 100%;
-    /* Align content left to match the IMPORT button position */
+/* --- Header Import Guide (Integrated & Left-Aligned) --- */
+.header-import-guide {
     display: flex;
-    justify-content: flex-start;
-    align-items: flex-end; /* Align arrow and text bottom */
-    
-    /* Padding-left aligns the arrow roughly above the Import button */
-    padding: 0 0 0 35px; 
-    
-    /* Increased margin-bottom ensures the arrow isn't covered by the panel */
-    margin-bottom: 25px; 
-    
-    border: none;
-    background: transparent;
-    box-sizing: border-box;
-    position: relative;
-    z-index: 1; /* Ensure arrow stays on top if it overlaps slightly */
-}
-
-.guide-content {
-    display: flex;
-    flex-direction: row; /* Arrow left, Text right */
+    justify-content: flex-start; 
     align-items: flex-end; 
-    gap: 15px; /* Space between arrow and text */
+    gap: 10px;
+    
+    margin-top: -20px; 
+    
+    padding-left: 45px; 
+    
+    opacity: 0.7;
+    transition: opacity 0.3s;
 }
 
-/* The Hand-Drawn Arrow Style */
-.guide-arrow-svg {
-    width: 45px; 
+.header-import-guide:hover {
+    opacity: 1;
+}
+
+.header-arrow-svg {
+    width: 35px; 
     height: auto;
-    opacity: 0.7;
-    color: #2c3e50; /* Dark blue to match text */
-    display: block;
-    margin-bottom: -20px; /* Lowers the arrow to point at the button */
-    transform: rotate(-5deg); 
+    color: #95a5a6;
+    transform: rotate(0deg); 
+    margin-bottom: -5px;
 }
 
-/* Clean System Typography */
-.guide-text {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    font-size: 1.1em; /* Readable standard size */
-    font-weight: 500; /* Medium weight */
-    color: #2c3e50; /* Dark blue */
-    opacity: 0.7;
-    margin: 0;
-    margin-bottom: 5px; 
+.header-guide-text {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    font-size: 0.9em; 
     line-height: 1.2;
-    font-style: italic; /* Keeps it looking like a hint */
+    text-align: left;
+    color: #7f8c8d;
+    font-style: italic;
+    font-weight: 500;
+    margin: 0;
 }
-
-/* Remove old upload grid classes just in case */
-.upload-grid, .unified-drop-container { display: none; }
 
 /* --- Controls Container (Box Style) --- */
 .controls-box {
@@ -657,11 +642,11 @@ tfoot td { border-bottom: none; color: #2c3e50; }
 }
 
 /* --- Action Buttons (Import/Stats) --- */
+/* Basis-Styles */
 .status-badge.import-action,
 .status-badge.stats-action {
     flex: 0 0 90px;
     justify-content: center;
-    border: 1px solid #3498db;
     color: #3498db;
     font-weight: 700;
     font-size: 0.85em;
@@ -670,16 +655,28 @@ tfoot td { border-bottom: none; color: #2c3e50; }
     text-transform: uppercase;
 }
 
+.status-badge.import-action {
+    border: 2px dashed #3498db;
+    background-color: #fbfbfb;
+}
+
+.status-badge.stats-action {
+    border: 1px solid #3498db;
+}
+
+/* Hover-Effects */
 .status-badge.import-action:hover,
 .status-badge.stats-action:hover {
     background: #3498db; 
     color: white; 
+    border-style: solid;
 }
 
+/* Drag-Over Effect */
 .status-badge.import-action.hover {
     background-color: #eaf6ff;
-    border-style: dashed;
-    color: #2980b9;
+    border-color: #2980b9;
+    transform: scale(1.05);
 }
 
 /* --- Symmetrical Shot/Profile Badges --- */
