@@ -1,0 +1,198 @@
+/* --- Controls Container --- */
+.controls-box {
+    background: #fdfdfd; border: 1px solid #e1e4e8; border-radius: 8px;
+    padding: 10px 15px; margin-bottom: 15px; box-shadow: none;
+}
+/* --- Controls Header Toolbar (Presets) --- */
+.controls-header-row {
+    display: flex; align-items: center; gap: 10px; 
+    cursor: pointer; padding-left: 5px; user-select: none;
+    flex-wrap: wrap; /* Allow wrapping on very small screens */
+}
+.controls-title { font-weight: 600; color: #2c3e50; font-size: 1em; }
+
+/* Spacer to push toolbar to the right */
+.controls-spacer { flex-grow: 1; }
+
+.preset-toolbar {
+    display: flex; align-items: center; gap: 6px;
+    font-size: 0.85em;
+    margin-right: 5px;
+}
+
+/* Preset Buttons */
+.btn-preset {
+    background: #fff; border: 1px solid #dcdde1; color: #7f8c8d;
+    padding: 3px 8px; border-radius: 4px; cursor: pointer;
+    font-size: 0.9em; font-weight: 600; transition: all 0.2s;
+    display: flex; align-items: center; gap: 4px;
+}
+.btn-preset:hover { border-color: #3498db; color: #3498db; }
+.btn-preset.fav { border-color: #f1c40f; color: #f39c12; }
+.btn-preset.fav:hover { background: #fffdf0; }
+
+/* Preset Select Dropdown */
+.preset-select {
+    padding: 3px 20px 3px 6px; 
+    border: 1px solid #dcdde1; border-radius: 4px;
+    font-size: 0.9em; color: #34495e; background: #fff;
+    cursor: pointer;
+    /* Custom Arrow */
+    appearance: none; -webkit-appearance: none;
+    background-image: url("data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%237f8c8d%22%20d%3D%22M287%2069.4a17.6%2017.6%200%200%200-13-5.4H18.4c-5%200-9.3%201.8-12.9%205.4A17.6%2017.6%200%200%200%200%2082.2c0%205%201.8%209.3%205.4%2012.9l128%20127.9c3.6%203.6%207.8%205.4%2012.8%205.4s9.2-1.8%2012.8-5.4L287%2095c3.5-3.5%205.4-7.8%205.4-12.8%200-5-1.9-9.2-5.5-12.8z%22%2F%3E%3C%2Fsvg%3E");
+    background-repeat: no-repeat; background-position: right 6px center; background-size: 8px auto;
+    max-width: 120px;
+}
+.preset-select:focus { outline: none; border-color: #3498db; }
+
+/* Delete Icon (Hidden by default, shown via JS) */
+.btn-preset-del {
+    width: 24px; height: 24px; border: 1px solid #e74c3c; 
+    color: #e74c3c; background: #fff; border-radius: 4px;
+    display: none; /* Controlled by JS */
+    align-items: center; justify-content: center; cursor: pointer;
+}
+.btn-preset-del:hover { background: #fceceb; }
+.btn-preset-del svg { width: 14px; height: 14px; }
+
+/* Responsive Grid */
+.controls-grid {
+    display: flex; flex-wrap: wrap; gap: 15px; margin-top: 15px; padding-top: 15px;
+    border-top: 1px dashed #eee; animation: fadeIn 0.2s ease-out;
+}
+.controls-grid.collapsed { display: none; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Individual Checkbox Group (Now with Background Tint) */
+.control-group {
+    padding: 10px; border-radius: 6px; border: 1px solid #eee;
+    flex: 1 1 200px; min-width: 200px; /* Wider for full text */
+}
+
+.control-group h4 {
+    margin: 0 0 8px 0; font-size: 0.85em; font-weight: 700; color: #555; 
+    text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(0,0,0,0.05); padding-bottom: 5px;
+}
+
+/* --- Shared Color Groups (Background Tints) --- */
+/* We align these colors with GaggiMate Palette */
+
+/* Weight (Purple) - Fix added */
+.group-weight, .group-weight_det { background-color: rgba(139, 92, 246, 0.08); } 
+.control-group.group-weight h4, .control-group.group-weight_det h4 { color: #6d28d9; }
+
+/* Basics (Gray) */
+.group-basics { background-color: rgba(107, 114, 128, 0.08); }
+.control-group.group-basics h4 { color: #4b5563; }
+
+/* Pressure (Blue) */
+.group-pressure, .group-target_pressure { background-color: rgba(0, 102, 204, 0.08); }
+.control-group.group-pressure h4, .control-group.group-target_pressure h4 { color: #0056b3; }
+
+/* Flow (Green) */
+.group-flow, .group-target_flow { background-color: rgba(99, 153, 61, 0.08); }
+.control-group.group-flow h4, .control-group.group-target_flow h4 { color: #4a7a29; }
+
+/* Puck Flow (Dark Green) */
+.group-puckflow { background-color: rgba(32, 77, 0, 0.08); }
+.control-group.group-puckflow h4 { color: #1e4600; }
+
+/* Temp (Orange) */
+.group-temp, .group-target_temp { background-color: rgba(240, 86, 29, 0.08); }
+.control-group.group-temp h4, .control-group.group-target_temp h4 { color: #c03a0e; }
+
+/* System (Purple/Blue mix) */
+.group-system { background-color: rgba(139, 92, 246, 0.05); }
+.control-group.group-system h4 { color: #7c3aed; }
+
+.checkbox-label { display: block; font-size: 13px; margin-bottom: 4px; cursor: pointer; color: #333; }
+.checkbox-label input { margin-right: 6px; }
+
+/* --- Save Preset Footer --- */
+.controls-footer {
+    margin-top: 15px; 
+    padding-top: 10px; 
+    border-top: 1px dashed #dcdde1;
+    
+    /* Layout: Standard Left, Icons Right */
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.footer-actions-right {
+    display: flex;
+    gap: 8px; /* Abstand zwischen den Icons rechts */
+}
+
+/* Generic Footer Icon Button (Square) */
+.btn-footer-icon {
+    background: #fff;
+    border: 1px solid #dcdde1;
+    color: #95a5a6;
+    width: 30px; 
+    height: 30px; 
+    border-radius: 4px;
+    display: flex; 
+    align-items: center; 
+    justify-content: center;
+    cursor: pointer; 
+    transition: all 0.2s;
+}
+
+.btn-footer-icon svg {
+    width: 16px; 
+    height: 16px;
+    stroke-width: 2;
+}
+
+/* Hover Variants */
+.btn-footer-icon.reset:hover {
+    border-color: #e74c3c; color: #e74c3c; background: #fff5f5;
+}
+
+.btn-footer-icon.add:hover {
+    border-color: #2ecc71; color: #27ae60; background: #f0fdf4;
+}
+
+/* Text Button (Save as Standard) */
+.btn-footer-action {
+    background: #fff; border: 1px solid #dcdde1; color: #7f8c8d;
+    padding: 6px 14px; border-radius: 4px; font-weight: 600;
+    cursor: pointer; font-size: 0.85em; transition: all 0.2s;
+    display: inline-flex; align-items: center; gap: 5px;
+}
+
+/* Save Standard (Blue) */
+.btn-footer-action.standard { border-color: #3498db; color: #3498db; }
+.btn-footer-action.standard:hover { background: #3498db; color: white; }
+
+/* --- Updates for Header Buttons (Neutral Fav) --- */
+/* Overwrite previous fav styles to be neutral but keep structure */
+.btn-preset.fav {
+    border-color: #dcdde1; color: #7f8c8d; /* Neutral like Standard */
+}
+.btn-preset.fav:hover {
+    border-color: #3498db; color: #3498db; /* Standard Blue Hover */
+}
+/* Optional: Make the star icon inside slightly distinct if desired, otherwise keep it unified */
+
+/* Data Editor Styles (kept compact) */
+.editor-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px; }
+.editor-group { display: flex; flex-direction: column; gap: 5px; }
+.editor-label { font-size: 0.85em; font-weight: 600; color: #7f8c8d; text-transform: uppercase; }
+.editor-input, .editor-select, .editor-textarea {
+    padding: 8px 10px; border: 1px solid #dcdde1; border-radius: 4px; font-size: 0.95em;
+    color: #2c3e50; font-family: inherit; background: #fff; transition: border-color 0.2s;
+}
+.editor-input:focus, .editor-select:focus, .editor-textarea:focus {
+    outline: none; border-color: #3498db; box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+.editor-textarea { min-height: 80px; resize: vertical; }
+.editor-actions { margin-top: 20px; padding-top: 15px; border-top: 1px dashed #dcdde1; text-align: right; }
+.btn-save-export {
+    background-color: #27ae60; color: white; border: none; padding: 10px 20px;
+    border-radius: 6px; font-weight: 600; font-size: 0.9em; cursor: pointer;
+    display: inline-flex; align-items: center; gap: 8px; transition: background 0.2s;
+}
+.btn-save-export:hover { background-color: #219150; }

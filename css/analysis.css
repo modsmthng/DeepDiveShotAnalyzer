@@ -1,0 +1,125 @@
+/* --- Analysis Main Card --- */
+.analysis-main-card {
+    background: #fff; border: 1px solid #dcdde1; border-radius: 8px;
+    padding: 20px; margin-top: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
+.analysis-header-title {
+    font-size: 1.1em; font-weight: 700; color: #2c3e50; margin-bottom: 15px;
+    padding-bottom: 10px; border-bottom: 2px solid #f1f4f6; text-transform: uppercase; letter-spacing: 0.5px;
+}
+
+/* --- Status Badges --- */
+.analysis-status-badge {
+    display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.85em;
+    font-weight: 600; margin-right: 10px; border: 1px solid transparent;
+}
+.badge-brew-mode { background: #e8f8f5; color: #16a085; border-color: #a3e4d7; }
+.badge-brew-mode.time { background: #f4f6f7; color: #7f8c8d; border-color: #bdc3c7; }
+.badge-scale-lost { background: #fadbd8; color: #c0392b; border-color: #e6b0aa; }
+.badge-auto-adjust { 
+    background: #f8f9fa; color: #7f8c8d; border-color: #dcdde1; 
+    border-style: dashed; cursor: help; 
+}
+
+/* --- Table Styling (Compact Grid) --- */
+.table-container {
+    /* Auto width instead of 100% allows table to shrink if content is small */
+    display: inline-block; 
+    min-width: 100%; /* But ensure it fills container if needed */
+    overflow-x: auto; 
+    border: none; background: transparent;
+    margin-top: 5px; border-radius: 0;
+}
+
+.table-container table {
+    width: 100%; /* Tries to fill container */
+    border-collapse: collapse; 
+    table-layout: auto; /* Browser determines width based on content */
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    font-size: 12px;
+    color: #333;
+}
+
+/* --- Headers (TH) --- */
+.table-container th { 
+    text-align: center; 
+    background-color: #fff !important; 
+    color: #2c3e50 !important;         
+    font-weight: 700;
+    position: sticky; top: 0; z-index: 20; 
+    border: 1px solid #d1d5db;        
+    border-bottom: 2px solid #2c3e50; 
+    
+    /* FIX: Tight padding, same as TD */
+    padding: 5px 4px; 
+    font-size: 11px;
+    white-space: nowrap; /* Prevent header wrap */
+}
+
+/* --- Phase Column (Left Fixed) --- */
+.table-container th.phase-col, .table-container td.phase-col {
+    text-align: left !important; 
+    position: sticky; left: 0; z-index: 30;
+    border-right: 2px solid #2c3e50; 
+    background-color: #fff;
+    
+    /* FIX: Force minimum width fit */
+    width: 1%; 
+    white-space: nowrap;
+}
+.table-container th.phase-col { z-index: 40; } 
+
+/* --- Data Cells (TD) --- */
+.table-container td {
+    /* FIX: Tight padding matching Header */
+    padding: 5px 4px; 
+    
+    text-align: right; 
+    white-space: nowrap;
+    border: 1px solid #d1d5db; 
+    vertical-align: middle;
+    
+    /* FIX: Trick to make columns shrink to fit content */
+    width: 1%;
+}
+
+/* Alternating Rows */
+.table-container tbody tr:nth-child(even) td { background-color: #fafafa; }
+.table-container tbody tr:hover td { background-color: #f3f4f6; }
+
+/* Cell Background Tints */
+.table-container td.group-weight, .table-container td.group-weight_det { background-color: rgba(139, 92, 246, 0.05) !important; }
+.table-container td.group-basics { background-color: rgba(107, 114, 128, 0.05) !important; }
+.table-container td.group-pressure, .table-container td.group-target_pressure { background-color: rgba(0, 102, 204, 0.05) !important; }
+.table-container td.group-flow, .table-container td.group-target_flow { background-color: rgba(99, 153, 61, 0.05) !important; }
+.table-container td.group-puckflow { background-color: rgba(32, 77, 0, 0.05) !important; }
+.table-container td.group-temp, .table-container td.group-target_temp { background-color: rgba(240, 86, 29, 0.05) !important; }
+.table-container td.group-system { background-color: rgba(139, 92, 246, 0.05) !important; }
+
+/* Strengthen tints on even rows slightly */
+.table-container tbody tr:nth-child(even) td.group-weight { background-color: rgba(139, 92, 246, 0.08) !important; }
+
+.trigger-hit { color: #d35400; font-weight: bold; background-color: rgba(230, 126, 34, 0.1); border-radius: 4px; padding: 1px 4px; }
+.val-target { color: #95a5a6; font-size: 0.85em; margin-left: 4px; font-style: italic; }
+.phase-name { font-weight: bold; font-size: 1.05em; color: #e67e22; display: block; }
+.phase-num { font-size: 0.85em; color: #95a5a6; }
+
+/* Footer */
+tfoot tr { background-color: #f3f4f6 !important; font-weight: bold; border-top: 2px solid #2c3e50; }
+tfoot td { border: 1px solid #d1d5db; color: #2c3e50; }
+.reason-badge { display: inline-block; font-size: 0.85em; padding: 2px 6px; border-radius: 4px; margin-top: 3px; color: white; background-color: #7f8c8d; font-weight: normal; }
+.reason-target { background-color: #d35400; }
+.hidden-col { display: none !important; }
+
+/* Legend */
+.analysis-legend {
+    margin-top: 15px; padding-top: 15px; border-top: 1px dashed #dcdde1;
+    font-size: 0.85em; color: #7f8c8d; display: flex; flex-wrap: wrap; gap: 20px;
+}
+.legend-item { display: flex; align-items: center; gap: 6px; }
+.legend-symbol {
+    font-weight: bold; color: #2c3e50; background: #f1f4f6; padding: 2px 6px;
+    border-radius: 4px; font-family: monospace; border: 1px solid #dcdde1;
+}
+
+.chart-wrapper { margin-top: 40px; height: 600px; display: none; position: relative; }

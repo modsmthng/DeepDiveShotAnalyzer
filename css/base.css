@@ -1,0 +1,62 @@
+/* --- Global Reset & Base Styles --- */
+body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    background-color: #f4f4f9; 
+    color: #333; 
+    padding: 20px; 
+    transition: all 0.3s ease;
+}
+
+.container { 
+    width: 95%; 
+    max-width: 1800px; 
+    margin: 0 auto; 
+    background: white; 
+    padding: 40px; 
+    border-radius: 12px; 
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+    position: relative;
+}
+
+/* --- Shared UI Components --- */
+
+/* Unified Toggle Button (Chevron) */
+.ui-toggle-btn {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: #f8f9fa;
+    color: #3498db;
+    border: 1px solid #dcdde1;
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; transition: all 0.2s ease; flex-shrink: 0; user-select: none;
+}
+.ui-toggle-btn:hover { background: #3498db; color: white; border-color: #3498db; box-shadow: 0 2px 5px rgba(52, 152, 219, 0.3); }
+.ui-toggle-btn svg { width: 16px; height: 16px; stroke-width: 2.5; transition: transform 0.3s cubic-bezier(0.4, 0.0, 0.2, 1); }
+.ui-toggle-btn.open svg { transform: rotate(180deg); }
+.ui-toggle-btn svg { transform: rotate(0deg); }
+
+/* SVG Action Buttons (Used in Library & Header) */
+.icon-btn, .header-action-btn, .toolbar-icon-btn {
+    background: none; border: 1px solid #dcdde1; cursor: pointer;
+    border-radius: 4px; display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s; color: #95a5a6;
+}
+.toolbar-icon-btn { height: 30px; width: 30px; background: #fff; color: #7f8c8d; }
+.header-action-btn { width: 32px; height: 32px; background: white; }
+.icon-btn { border: none; padding: 4px; }
+
+.icon-btn svg, .toolbar-icon-btn svg, .header-action-btn svg { width: 15px; height: 15px; stroke-width: 2; }
+
+/* Hover States */
+.icon-btn.exp:hover, .toolbar-icon-btn.exp:hover, .header-action-btn.export:hover { 
+    background: #eaf6ff; color: #3498db; border-color: #3498db; 
+}
+.icon-btn.del:hover, .toolbar-icon-btn.del:hover, .header-action-btn.delete:hover { 
+    background: #fceceb; color: #e74c3c; border-color: #e74c3c; 
+}
+.unload-btn {
+    display: flex; align-items: center; justify-content: center;
+    width: 20px; height: 20px; border-radius: 50%;
+    color: #bdc3c7; font-weight: bold; font-size: 16px; cursor: pointer; transition: color 0.2s;
+}
+.unload-btn:hover { color: #e74c3c; background: rgba(231, 76, 60, 0.1); }
