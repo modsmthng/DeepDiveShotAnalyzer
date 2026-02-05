@@ -94,23 +94,70 @@ window.unloadProfile = (e) => {
 };
 
 /**
- * Smart Import Logic: Detects file type and routes accordingly
+ * Smart Import Logic: Detects file type (Shot, Single Profile, or Bulk Profiles)
  */
 function handleSmartImport(fileList) {
     Array.from(fileList).forEach(file => {
         const reader = new FileReader();
+        
         reader.onload = (event) => {
             try {
                 const data = JSON.parse(event.target.result);
                 
-                // --- TYPE DETECTION ---
+                // --- CASE 1: BULK IMPORT (Array of Profiles) ---
+                if (Array.isArray(data)) {
+                    console.log("Smart Import: Detected Bulk Profile Array ->", file.name);
+                    
+                    // Load existing library once to perform bulk update
+                    const library = JSON.parse(localStorage.getItem(DB_KEYS.PROFILES) || '[]');
+                    let importCount = 0;
+
+                    data.forEach(profileItem => {
+                        // Basic validation: must have 'phases' and a 'label'
+                        if (profileItem.phases && profileItem.label) {
+                            const displayName = profileItem.label;
+                            // Generate a safe pseudo-filename since it comes from a big JSON
+                            const fakeFileName = displayName.replace(/[^a-z0-9]/gi, '_').toLowerCase() + ".json";
+                            
+                            const entry = {
+                                name: displayName,
+                                fileName: fakeFileName,
+                                saveDate: Date.now(),
+                                shotDate: Date.now(), // Profiles don't have a shot date
+                                profileName: "Manual/Unknown",
+                                duration: 0,
+                                data: profileItem
+                            };
+
+                            // Update existing or add new
+                            const existingIndex = library.findIndex(item => item.name === displayName);
+                            if (existingIndex > -1) library[existingIndex] = entry;
+                            else library.push(entry);
+                            
+                            importCount++;
+                        }
+                    });
+
+                    if (importCount > 0) {
+                        localStorage.setItem(DB_KEYS.PROFILES, JSON.stringify(library));
+                        refreshLibraryUI();
+                        alert(`Successfully imported ${importCount} profiles from ${file.name}`);
+                    } else {
+                        throw new Error("JSON Array found, but no valid profiles detected inside.");
+                    }
+                    return; // Done with this file
+                }
+
+                // --- CASE 2: SINGLE ITEM (Shot or Profile) ---
                 const hasSamples = data.hasOwnProperty('samples');
                 const hasPhases = data.hasOwnProperty('phases');
                 
                 if (hasSamples) {
+                    // It is a SHOT
                     saveToLibrary(DB_KEYS.SHOTS, file.name, data);
                     loadShot(data, file.name);
                 } else if (hasPhases) {
+                    // It is a SINGLE PROFILE
                     saveToLibrary(DB_KEYS.PROFILES, file.name, data);
                     loadProfile(data, file.name);
                 } else {
@@ -449,62 +496,102 @@ function performAnalysis() {
 
     renderFileInfo(currentShotData, currentShotName);
     renderTable(results);
-    renderChart(results);
+    renderChart(results, currentShotData);
 }
 
 /**
- * UI Controls Rendering
- * UPDATED: Latency settings now placed directly above the Analysis Table
- * UPDATED: Column checkboxes now include description suffix
+ * UI Controls Rendering (Boxed, Collapsed Default, Responsive)
  */
 function renderControls() {
-    const grid = document.getElementById('controls-grid');
-    if (!grid) return;
-    grid.innerHTML = '';
+    const wrapper = document.getElementById('controls-area');
+    if (!wrapper) return;
 
-    // 1. Latency Settings Injection (Placed immediately before the table container)
+    // --- 1. LATENCY SETTINGS (Always Visible) ---
+    // Check if latency settings exist, if not create them in their own box
     let settingsDiv = document.getElementById('analysis-settings');
     if (!settingsDiv) {
         settingsDiv = document.createElement('div');
         settingsDiv.id = 'analysis-settings';
-        // Styled to fit neatly above the table
+        // Reuse the .controls-box class for consistent look
+        settingsDiv.className = 'controls-box'; 
+        settingsDiv.style.display = 'block'; // Ensure it's visible
         settingsDiv.innerHTML = `
-            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em; margin-bottom:10px; background:#fff; padding:10px; border-radius:8px; border:1px solid #dcdde1;">
-                <h4 style="margin: 0; color: #34495e;">Latency Settings</h4>
+            <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em;">
+                <h4 style="margin: 0; color: #34495e; font-weight:600;">Latency Settings</h4>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <label>Scale:</label> <input type="number" id="predictive-scale-delay" value="800" step="50" style="width: 50px;"> ms
+                    <label style="color:#555;">Scale:</label> <input type="number" id="predictive-scale-delay" value="800" step="50" style="width: 50px; padding:4px; border:1px solid #ccc; border-radius:4px;"> ms
                 </div>
                 <div style="display: flex; align-items: center; gap: 5px;">
-                    <label>System:</label> <input type="number" id="predictive-sensor-delay" value="200" step="50" style="width: 50px;"> ms
-                    <input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''}> Auto
+                    <label style="color:#555;">System:</label> <input type="number" id="predictive-sensor-delay" value="200" step="50" style="width: 50px; padding:4px; border:1px solid #ccc; border-radius:4px;"> ms
+                    <label style="cursor:pointer; user-select:none; display:flex; align-items:center;"><input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''} style="margin-right:4px;"> Auto</label>
                 </div>
             </div>`;
         
-        // Find the table container to inject before
-        const tableContainer = document.querySelector('.table-container');
-        if(tableContainer && tableContainer.parentNode) {
-            tableContainer.parentNode.insertBefore(settingsDiv, tableContainer);
-        } else {
-             // Fallback if table container not found, put it in controls area
-            const container = document.getElementById('controls-area');
-            if(container) container.appendChild(settingsDiv);
-        }
-        
-        // Event Listeners
-        document.getElementById('predictive-scale-delay').onchange = performAnalysis;
-        const sensorInp = document.getElementById('predictive-sensor-delay');
-        sensorInp.onchange = performAnalysis;
-        document.getElementById('auto-sensor-delay').onchange = (e) => {
-            isSensorDelayAuto = e.target.checked;
-            sensorInp.disabled = isSensorDelayAuto;
-            performAnalysis();
-        };
-    } else {
-        // Ensure it is visible if it was hidden
-        settingsDiv.style.display = 'block';
+        // Append to wrapper (Order: Latency first, or Columns first? User said "Latency Settings darunter" -> So Columns first)
+        // But to keep code simple, we usually just append. If we want Latency BELOW columns, we append it AFTER columns.
+        // Let's create columns first below.
     }
 
-    // 2. Column Checkboxes with Descriptions
+    // --- 2. DISPLAYED COLUMNS (Collapsible Box) ---
+    // Check if the Columns Container already exists
+    let columnsBox = document.getElementById('columns-control-box');
+    
+    // If not, build the structure
+    if (!columnsBox) {
+        columnsBox = document.createElement('div');
+        columnsBox.id = 'columns-control-box';
+        columnsBox.className = 'controls-box';
+        
+        // Header with Plus Button
+        const header = document.createElement('div');
+        header.className = 'controls-header-row';
+        header.innerHTML = `
+            <div class="toggle-plus-btn" id="col-toggle-btn">+</div>
+            <div class="controls-title">Displayed Columns</div>
+        `;
+        
+        // The Grid (Default Collapsed)
+        const grid = document.createElement('div');
+        grid.id = 'controls-grid';
+        grid.className = 'controls-grid collapsed'; // Start collapsed
+        
+        // Toggle Logic
+        header.onclick = () => {
+            const isCollapsed = grid.classList.contains('collapsed');
+            const btn = document.getElementById('col-toggle-btn');
+            
+            if (isCollapsed) {
+                grid.classList.remove('collapsed');
+                btn.innerText = "−"; // Minus sign
+                btn.style.color = "#e74c3c";
+            } else {
+                grid.classList.add('collapsed');
+                btn.innerText = "+";
+                btn.style.color = "#3498db";
+            }
+        };
+
+        // Assemble Box
+        columnsBox.appendChild(header);
+        columnsBox.appendChild(grid);
+        
+        // Clear Wrapper and Re-Order: Columns TOP, Settings BOTTOM
+        wrapper.innerHTML = ''; 
+        wrapper.appendChild(columnsBox);
+        
+        if (settingsDiv) {
+             wrapper.appendChild(settingsDiv);
+             // Re-attach listeners for latency since we moved the node
+             attachLatencyListeners();
+        }
+
+    } else {
+        // Just clear the grid to re-render checkboxes
+        document.getElementById('controls-grid').innerHTML = '';
+    }
+
+    // --- 3. Render Checkboxes ---
+    const grid = document.getElementById('controls-grid');
     const grouped = {};
     columnConfig.forEach(col => {
         if (!grouped[col.group]) grouped[col.group] = [];
@@ -519,14 +606,14 @@ function renderControls() {
             const lbl = document.createElement('label');
             lbl.className = 'checkbox-label';
             
-            // Re-added logic for descriptive suffixes
             let suffix = "";
-            if (col.type === 'se') suffix = " <small style='color:#95a5a6'>Start / End</small>";
-            else if (col.type === 'mm') suffix = " <small style='color:#95a5a6'>[min / max]</small>";
-            else if (col.type === 'avg') suffix = " <small style='color:#95a5a6'>Avg (Time-Weighted)</small>";
+            if (col.type === 'se') suffix = " <small style='color:#95a5a6'>S/E</small>";
+            else if (col.type === 'mm') suffix = " <small style='color:#95a5a6'>Min/Max</small>";
+            else if (col.type === 'avg') suffix = " <small style='color:#95a5a6'>Avg</small>";
             
             lbl.innerHTML = `<input type="checkbox" id="chk-${col.id}" ${col.default ? 'checked' : ''}> ${col.label}${suffix}`;
             div.appendChild(lbl);
+            
             setTimeout(() => {
                 const cb = document.getElementById(`chk-${col.id}`);
                 if (cb) cb.onchange = () => toggleColumn(col.id);
@@ -534,6 +621,24 @@ function renderControls() {
         });
         grid.appendChild(div);
     });
+
+    // Helper to attach listeners (since innerHTML wipe might lose them)
+    function attachLatencyListeners() {
+        const scaleInput = document.getElementById('predictive-scale-delay');
+        const sensorInput = document.getElementById('predictive-sensor-delay');
+        const autoCheck = document.getElementById('auto-sensor-delay');
+        
+        if(scaleInput) scaleInput.onchange = performAnalysis;
+        if(sensorInput) sensorInput.onchange = performAnalysis;
+        if(autoCheck) autoCheck.onchange = (e) => {
+            isSensorDelayAuto = e.target.checked;
+            if(sensorInput) sensorInput.disabled = isSensorDelayAuto;
+            performAnalysis();
+        };
+    }
+    
+    // Initial attach if creating for the first time
+    attachLatencyListeners();
 }
 
 // Helpers
@@ -572,4 +677,63 @@ window.showStatsFeatureInfo = () => {
     box.innerHTML = `<h3 style="margin: 0; color: #2c3e50;">Advanced Statistics coming soon!</h3><img src="ui/assets/deep-dive-logo.png" style="width: 140px;"><div style="font-size: 0.8em; color: #bdc3c7;">Click to close</div>`;
     overlay.onclick = () => document.body.removeChild(overlay);
     overlay.appendChild(box); document.body.appendChild(overlay);
+};
+
+/**
+ * Helper to update shot metadata live
+ */
+window.updateShotMeta = (field, value) => {
+    if (!currentShotData) return;
+    
+    // Convert numbers
+    if (field === 'doseIn' || field === 'doseOut' || field === 'rating') {
+        value = parseFloat(value);
+    }
+
+    // Update Data
+    currentShotData[field] = value;
+    
+    // Auto-Calculate Ratio if dose changes
+    if (field === 'doseIn' || field === 'doseOut') {
+        const inVal = parseFloat(currentShotData.doseIn) || 0;
+        const outVal = parseFloat(currentShotData.doseOut) || 0;
+        if (inVal > 0 && outVal > 0) {
+            currentShotData.ratio = parseFloat((outVal / inVal).toFixed(2));
+            const ratioInput = document.getElementById('meta-ratio');
+            if (ratioInput) ratioInput.value = currentShotData.ratio;
+        }
+    }
+    
+    // Persist to LocalStorage (Update the library entry)
+    const library = JSON.parse(localStorage.getItem(DB_KEYS.SHOTS) || '[]');
+    const index = library.findIndex(i => i.name === currentShotData.name || i.fileName === currentShotData.fileName); // Fallback to filename match
+    
+    if (index > -1) {
+        library[index].data = currentShotData;
+        localStorage.setItem(DB_KEYS.SHOTS, JSON.stringify(library));
+    }
+};
+
+/**
+ * Export the CURRENTLY LOADED shot with all edits (Keep original filename)
+ */
+window.exportCurrentShot = () => {
+    if (!currentShotData) return;
+    const jsonStr = JSON.stringify(currentShotData, null, 2);
+    const blob = new Blob([jsonStr], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    
+    const link = document.createElement('a');
+    link.href = url;
+    
+    // Use the original filename variable
+    // Check if it already has .json, if not add it
+    let downloadName = currentShotName;
+    if (!downloadName.toLowerCase().endsWith('.json')) {
+        downloadName += '.json';
+    }
+    
+    link.download = downloadName;
+    link.click();
+    URL.revokeObjectURL(url);
 };

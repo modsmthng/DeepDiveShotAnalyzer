@@ -53,31 +53,203 @@ export const groups = {
     temp: "Temperature (°C)", target_temp: "Target Temp (°C)", weight_det: "Weight Details (g)", system: "System Info"
 };
 
-export function renderFileInfo(data, filename) {
-    const container = document.getElementById('file-info-container');
-    const text = document.getElementById('file-info-text');
-    const extended = document.getElementById('extended-info-content');
-    const btn = document.getElementById('toggle-info-btn');
+/**
+ * Renders the Header in GaggiMate Style and the Editor
+ */
+export function renderFileInfo(shot, fileName) {
+    const infoContainer = document.getElementById('file-info-container');
+    const infoText = document.getElementById('file-info-text'); // We'll overwrite the parent actually
+    const extendedContent = document.getElementById('extended-info-content');
     
-    container.style.display = 'block';
-    text.innerHTML = `<strong>File:</strong> ${filename} &nbsp;|&nbsp; <strong>Profile:</strong> ${data.profile || 'Unknown'} &nbsp;|&nbsp; <strong>Date:</strong> ${new Date(data.timestamp * 1000).toLocaleString('en-US')}`;
-    
-    const notes = data.notes || {};
-    const safe = (val) => (val && val !== "") ? val : "-";
-    const row = (label, val) => `<div class="detail-row"><span class="detail-label">${label}:</span><span class="detail-val">${safe(val)}</span></div>`;
-    let ratioVal = safe(notes.ratio);
-    if (ratioVal === "-" && notes.doseIn && notes.doseOut) {
-        const di = parseFloat(notes.doseIn);
-        const doo = parseFloat(notes.doseOut);
-        if (!isNaN(di) && !isNaN(doo) && di > 0) ratioVal = `1 : ${(doo / di).toFixed(1)} (Calc)`;
+    if (!shot || !infoContainer) return;
+
+    // --- 1. Data Preparation ---
+
+    // A) Profile Name
+    let profileName = "Manual / Unknown";
+    if (shot.profile) {
+        if (typeof shot.profile === 'string') profileName = shot.profile;
+        else if (shot.profile.title) profileName = shot.profile.title;
+        else if (shot.profile.label) profileName = shot.profile.label; 
     }
-    let html = '<div class="details-grid">';
-    html += `<div class="detail-section"><h5>Bean & Grinder</h5>${row("Bean Type", notes.beanType)}${row("Grind Setting", notes.grindSetting)}${row("Dose In", notes.doseIn ? notes.doseIn + " g" : "-")}${row("Dose Out", notes.doseOut ? notes.doseOut + " g" : "-")}${row("Ratio", ratioVal)}</div>`;
-    html += `<div class="detail-section"><h5>Taste & Rating</h5>${row("Rating", notes.rating)}${row("Balance", notes.balanceTaste)}${notes.notes ? '<div class="detail-notes">"'+notes.notes+'"</div>' : ''}</div>`;
-    html += `<div class="detail-section"><h5>Technical Specs</h5>${row("Profile ID", data.profileId)}${row("Shot ID", data.id)}${row("Version", data.version)}${row("Sample Interval", data.sampleInterval ? data.sampleInterval + " ms" : "-")}${row("Volume (Sensor)", data.volume ? data.volume + " ml" : "-")}</div></div>`;
-    extended.innerHTML = html;
-    extended.style.display = 'none'; 
-    btn.innerText = "More Info";
+
+    // B) Smart Dose Extraction & Persistence
+    // If doseIn is missing, try to find "20g" in profile name AND SAVE IT TO DATA
+    let detectedDoseIn = shot.doseIn || shot.bean_weight || 0;
+    if (detectedDoseIn == 0 && profileName) {
+        const doseMatch = profileName.match(/(\d+(?:\.\d+)?)g\b/i);
+        if (doseMatch) {
+            detectedDoseIn = parseFloat(doseMatch[1]);
+            // IMPORTANT: Write back to global data for export
+            if (window.currentShotData) window.currentShotData.doseIn = detectedDoseIn;
+        }
+    }
+
+    // C) Auto-Calculate Weight (Dose Out)
+    let calcDoseOut = shot.doseOut || shot.drink_weight || 0;
+    if (!calcDoseOut || parseFloat(calcDoseOut) === 0) {
+        if (shot.samples) {
+            let maxW = 0;
+            shot.samples.forEach(s => {
+                const val = s.v !== undefined ? s.v : (s.w !== undefined ? s.w : 0);
+                if (val > maxW) maxW = val;
+            });
+            if (maxW > 0) calcDoseOut = parseFloat(maxW.toFixed(1));
+        }
+    }
+    // Write back calculated doseOut if it was missing
+    if ((!shot.doseOut || shot.doseOut == 0) && calcDoseOut > 0 && window.currentShotData) {
+        window.currentShotData.doseOut = calcDoseOut;
+    }
+
+    // D) Calculate Ratio
+    let ratio = shot.ratio || 0;
+    if ((!ratio || ratio == 0) && detectedDoseIn > 0 && calcDoseOut > 0) {
+        ratio = (calcDoseOut / detectedDoseIn).toFixed(1); // e.g. "2.1"
+        if (window.currentShotData) window.currentShotData.ratio = parseFloat(ratio);
+    }
+
+    // --- 2. Construct the Meta String (Line 2) ---
+    // Format: #58 • 4.2.2026 14:02 • 43.6s • In: 20g • Out: 40g • 1:2.0 • Not rated
+    
+    const idStr = shot.id ? `#${shot.id}` : "";
+    const dateStr = shot.timestamp ? new Date(shot.timestamp * 1000).toLocaleString([], {year: 'numeric', month: 'numeric', day: 'numeric', hour: '2-digit', minute:'2-digit'}) : "";
+    const durationStr = shot.samples && shot.samples.length > 0 
+        ? ((shot.samples[shot.samples.length-1].t - shot.samples[0].t) / 1000).toFixed(1) + 's' 
+        : "0s";
+    
+    const inStr = detectedDoseIn > 0 ? `In: ${detectedDoseIn}g` : "";
+    const outStr = calcDoseOut > 0 ? `Out: ${calcDoseOut}g` : "";
+    const ratioStr = ratio > 0 ? `1:${ratio}` : "";
+    
+    let ratingStr = "Not rated";
+    if (shot.rating > 0) ratingStr = `★ ${shot.rating}`;
+
+    // Join with separator bullets
+    const metaParts = [idStr, dateStr, durationStr, inStr, outStr, ratioStr, ratingStr].filter(p => p !== "");
+    const metaHtml = metaParts.join(` <span class="meta-separator">•</span> `);
+
+
+    // --- 3. Render Header HTML (New Structure) ---
+    // We replace the innerHTML of the header wrapper div directly
+    const headerHtml = `
+        <div class="file-info-header">
+            <div class="toggle-plus-btn" id="header-toggle-btn">+</div>
+            
+            <div class="header-text-group">
+                <div class="header-profile-title">${profileName}</div>
+                <div class="header-meta-line">${metaHtml}</div>
+            </div>
+
+            <div class="header-actions">
+                <button class="header-action-btn export" onclick="window.exportCurrentShot()" title="Export JSON">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                </button>
+                <button class="header-action-btn delete" onclick="window.unloadShot(event)" title="Close/Delete View">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+        </div>
+    `;
+
+    // Inject Header before the extended content
+    // Note: We need to preserve the extended-info-content div
+    const existingContentDiv = extendedContent.cloneNode(true);
+    infoContainer.innerHTML = headerHtml;
+    infoContainer.appendChild(existingContentDiv);
+
+    // Re-reference elements after DOM overwrite
+    const newExtended = document.getElementById('extended-info-content');
+    const newToggle = document.getElementById('header-toggle-btn');
+    
+    // Toggle Logic
+    newExtended.style.display = 'none'; // Default collapsed
+    
+    newToggle.onclick = () => {
+        const isClosed = newExtended.style.display === 'none';
+        newExtended.style.display = isClosed ? 'block' : 'none';
+        newToggle.innerText = isClosed ? "−" : "+";
+        newToggle.style.color = isClosed ? "#e74c3c" : "#3498db";
+        infoContainer.classList.toggle('expanded', isClosed);
+        
+        // Re-render editor content only when opening to ensure fresh data
+        if (isClosed) renderEditorContent(shot, newExtended, detectedDoseIn, calcDoseOut, ratio);
+    };
+    
+    infoContainer.style.display = 'block';
+}
+
+/**
+ * Helper to render the form fields inside the expanded area
+ */
+function renderEditorContent(shot, container, dIn, dOut, rat) {
+    // Handle Notes Object vs String
+    let noteText = "";
+    if (shot.notes) {
+        if (typeof shot.notes === 'string') noteText = shot.notes;
+        else if (typeof shot.notes === 'object') noteText = shot.notes.body || shot.notes.text || shot.notes.notes || ""; 
+    }
+
+    const meta = {
+        beanType: shot.beanType || shot.bean_brand || "",
+        grindSetting: shot.grindSetting || shot.grinder_setting || "",
+        doseIn: dIn,
+        doseOut: dOut,
+        ratio: rat,
+        rating: shot.rating || 0,
+        balance: shot.balanceTaste || "balanced",
+        notes: noteText
+    };
+
+    container.innerHTML = `
+        <div class="editor-grid">
+            <div class="editor-group">
+                <label class="editor-label">Bean Type</label>
+                <input type="text" class="editor-input" value="${meta.beanType}" onchange="window.updateShotMeta('beanType', this.value)">
+            </div>
+            <div class="editor-group">
+                <label class="editor-label">Grind</label>
+                <input type="text" class="editor-input" value="${meta.grindSetting}" onchange="window.updateShotMeta('grindSetting', this.value)">
+            </div>
+            <div class="editor-group">
+                <label class="editor-label">Dose In (g)</label>
+                <input type="number" step="0.1" class="editor-input" value="${meta.doseIn}" onchange="window.updateShotMeta('doseIn', this.value)">
+            </div>
+            <div class="editor-group">
+                <label class="editor-label">Dose Out (g)</label>
+                <input type="number" step="0.1" class="editor-input" value="${meta.doseOut}" onchange="window.updateShotMeta('doseOut', this.value)">
+            </div>
+             <div class="editor-group">
+                <label class="editor-label">Ratio</label>
+                <input type="number" id="meta-ratio" class="editor-input" value="${meta.ratio}" readonly style="background:#f9f9f9; color:#95a5a6;">
+            </div>
+            <div class="editor-group">
+                <label class="editor-label">Rating</label>
+                <input type="number" min="0" max="5" step="1" class="editor-input" value="${meta.rating}" onchange="window.updateShotMeta('rating', this.value)">
+            </div>
+            <div class="editor-group">
+                <label class="editor-label">Balance</label>
+                <select class="editor-select" onchange="window.updateShotMeta('balanceTaste', this.value)">
+                    <option value="sour" ${meta.balance === 'sour' ? 'selected' : ''}>Sour</option>
+                    <option value="balanced" ${meta.balance === 'balanced' ? 'selected' : ''}>Balanced</option>
+                    <option value="bitter" ${meta.balance === 'bitter' ? 'selected' : ''}>Bitter</option>
+                </select>
+            </div>
+        </div>
+        <div class="editor-group" style="margin-top:10px;">
+            <label class="editor-label">Notes</label>
+            <textarea class="editor-textarea" maxlength="200" onchange="window.updateShotMeta('notes', this.value)">${meta.notes}</textarea>
+        </div>
+        <div class="editor-group" style="margin-top:20px; padding-top:15px; border-top:1px dashed #eee;">
+            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap:10px; font-size:0.8em; color:#95a5a6;">
+                <div>ID: <strong>${shot.id || "-"}</strong></div>
+                <div>Profile ID: <strong>${shot.profileId || "-"}</strong></div>
+                <div>Ver: <strong>${shot.version || "-"}</strong></div>
+                <div>Interval: <strong>${shot.sampleInterval || "-"} ms</strong></div>
+                <div>Vol: <strong>${shot.volume || "-"} ml</strong></div>
+            </div>
+        </div>
+    `;
 }
 
 export function renderTable(results) {
@@ -266,71 +438,234 @@ export function renderTable(results) {
     tableFoot.appendChild(trFoot);
 }
 
-export function renderChart(results) {
-    const ctx = document.getElementById('shotChart').getContext('2d');
-    if (myChart) myChart.destroy();
+/**
+ * Renders the Chart.js graph with GaggiMate colors using Raw Shot Data
+ * @param {Object} results - The calculated metrics (stats)
+ * @param {Object} shotData - The raw JSON data containing 'samples'
+ */
+export function renderChart(results, shotData) {
+    const ctx = document.getElementById('shotChart');
+    if (!ctx) return;
     
-    const cd = { times: [], pressure: [], targetPressure: [], flow: [], targetFlow: [], pumpFlow: [], weight: [], temp: [], targetTemp: [] };
-    const globalStartTime = results.startTime;
+    // Safety check: Do we have data?
+    if (!shotData || !shotData.samples || shotData.samples.length === 0) {
+        console.warn("No samples found for chart.");
+        return;
+    }
 
-    results.rawSamples.forEach(s => {
-        cd.times.push(((s.t - globalStartTime) / 1000).toFixed(2));
-        cd.pressure.push(s.cp);
-        cd.targetPressure.push(s.tp !== undefined ? s.tp : null);
-        cd.flow.push(s.fl); 
-        cd.targetFlow.push(s.tf !== undefined ? s.tf : null);
-        cd.pumpFlow.push(s.pf !== undefined ? s.pf : null);
-        cd.weight.push(s.v);
-        cd.temp.push(s.ct);
-        cd.targetTemp.push(s.tt !== undefined ? s.tt : null);
-    });
+    // Show chart container
+    document.getElementById('chart-wrapper').style.display = 'block';
 
-    const colPress = 'rgb(41, 128, 185)'; const colFlow = 'rgb(22, 160, 133)'; const colTemp = 'rgb(192, 57, 43)'; const colWeight = 'rgb(211, 84, 0)'; const colPuck = 'rgb(142, 68, 173)';
+    if (window.myChart instanceof Chart) {
+        window.myChart.destroy();
+    }
+
+    // --- GaggiMate Color Palette ---
+    const COLORS = {
+        temp: '#F0561D',        // Orange
+        tempTarget: '#731F00',  // Dark Red/Brown
+        pressure: '#0066CC',    // Blue
+        flow: '#63993D',        // Light Green
+        puckFlow: '#204D00',    // Dark Green
+        weight: '#8B5CF6',      // Purple
+        weightFlow: '#4b2e8d'   // Dark Purple
+    };
+
+    // --- 1. Process Samples into Series ---
+    // We map the raw samples to x (time in seconds) and y (value)
+    // Supports common GaggiMate/Visualizer keys: 
+    // p/cp (pressure), f/fl (flow), t/ct (temp), w/v (weight), tr/tt (target temp), tp (target press), tf (target flow)
     
-    const phaseBackgroundPlugin = {
-        id: 'phaseBackgrounds',
-        beforeDraw: (chart) => {
-            const { ctx, chartArea: { top, bottom }, scales: { x } } = chart;
-            ctx.save(); ctx.font = 'bold 12px sans-serif'; ctx.textBaseline = 'middle'; 
-            results.phases.forEach((phase, index) => {
-                const startX = x.getPixelForValue(phase.start); 
-                const endX = x.getPixelForValue(phase.end);
-                const width = endX - startX;
-                ctx.fillStyle = index % 2 === 0 ? 'rgba(0,0,0,0.02)' : 'rgba(0,0,0,0.06)';
-                ctx.fillRect(startX, top, width, bottom - top);
-                if (width > 12) { 
-                    ctx.save(); ctx.fillStyle = '#7f8c8d'; ctx.translate(startX + (width / 2), top + 10); ctx.rotate(Math.PI / 2); ctx.textAlign = 'left'; ctx.fillText(phase.displayName, 0, 0); ctx.restore();
-                }
-            });
-            ctx.restore();
-        }
+    const s = shotData.samples;
+    const series = {
+        pressure: [],
+        flow: [],
+        temp: [],
+        weight: [],
+        targetPressure: [],
+        targetFlow: [],
+        targetTemp: []
     };
     
-    myChart = new Chart(ctx, {
+    // Helper to find value from multiple possible keys (e.g., 'p' or 'cp')
+    const getVal = (item, keys) => {
+        for (let k of keys) {
+            if (item[k] !== undefined) return item[k];
+        }
+        return null;
+    };
+
+    s.forEach(d => {
+        // Time is usually in ms, convert to seconds
+        const t = (d.t || 0) / 1000; 
+
+        // Extract values
+        const press = getVal(d, ['cp', 'p', 'pressure']);
+        const flow = getVal(d, ['fl', 'f', 'flow']);
+        const temp = getVal(d, ['ct', 't', 'temperature']);
+        const weight = getVal(d, ['v', 'w', 'weight', 'm']); // 'v' is often used for weight value
+        
+        const tPress = getVal(d, ['tp', 'target_pressure']);
+        const tFlow = getVal(d, ['tf', 'target_flow']);
+        const tTemp = getVal(d, ['tt', 'tr', 'target_temperature']);
+
+        if (press !== null) series.pressure.push({ x: t, y: press });
+        if (flow !== null) series.flow.push({ x: t, y: flow });
+        if (temp !== null) series.temp.push({ x: t, y: temp });
+        if (weight !== null) series.weight.push({ x: t, y: weight });
+        
+        if (tPress !== null) series.targetPressure.push({ x: t, y: tPress });
+        if (tFlow !== null) series.targetFlow.push({ x: t, y: tFlow });
+        if (tTemp !== null) series.targetTemp.push({ x: t, y: tTemp });
+    });
+
+    // Check if we have weight data to decide if we show the axis
+    const hasWeight = series.weight.some(pt => pt.y > 0);
+
+    // --- 2. Build Datasets ---
+    const datasets = [
+        {
+            label: 'Pressure (bar)',
+            data: series.pressure,
+            borderColor: COLORS.pressure,
+            backgroundColor: COLORS.pressure,
+            yAxisID: 'y',
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.2
+        },
+        {
+            label: 'Flow (ml/s)',
+            data: series.flow,
+            borderColor: COLORS.flow,
+            backgroundColor: COLORS.flow,
+            yAxisID: 'y',
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.2
+        },
+        {
+            label: 'Temp (°C)',
+            data: series.temp,
+            borderColor: COLORS.temp,
+            backgroundColor: COLORS.temp,
+            yAxisID: 'y1',
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.2
+        },
+        {
+            label: 'Weight (g)',
+            data: series.weight,
+            borderColor: COLORS.weight,
+            backgroundColor: COLORS.weight,
+            yAxisID: 'y2', 
+            pointRadius: 0,
+            borderWidth: 2,
+            tension: 0.2,
+            hidden: !hasWeight // Auto-hide if empty
+        },
+        // --- TARGETS (Dashed Lines) ---
+        {
+            label: 'Target Pressure',
+            data: series.targetPressure,
+            borderColor: COLORS.pressure,
+            borderDash: [5, 5],
+            yAxisID: 'y',
+            pointRadius: 0,
+            borderWidth: 1,
+            fill: false,
+            tension: 0
+        },
+        {
+            label: 'Target Flow',
+            data: series.targetFlow,
+            borderColor: COLORS.flow,
+            borderDash: [5, 5],
+            yAxisID: 'y',
+            pointRadius: 0,
+            borderWidth: 1,
+            fill: false,
+            tension: 0
+        },
+        {
+            label: 'Target Temp',
+            data: series.targetTemp,
+            borderColor: COLORS.tempTarget, 
+            borderDash: [5, 5],
+            yAxisID: 'y1',
+            pointRadius: 0,
+            borderWidth: 1,
+            fill: false,
+            tension: 0
+        }
+    ];
+
+    window.myChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: cd.times.map(n => parseFloat(n)), 
-            datasets: [
-                { label: "Pressure", data: cd.pressure, borderColor: colPress, backgroundColor: colPress, yAxisID: 'y-left', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: false },
-                { label: "Target Pressure", data: cd.targetPressure, borderColor: colPress, borderDash: [5, 5], yAxisID: 'y-left', tension: 0.1, pointRadius: 0, borderWidth: 1.5, fill: false },
-                { label: "Pump Flow", data: cd.flow, borderColor: colFlow, backgroundColor: colFlow, yAxisID: 'y-left', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: false },
-                { label: "Puck Flow", data: cd.pumpFlow, borderColor: colPuck, backgroundColor: colPuck, yAxisID: 'y-left', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: false, hidden: false }, 
-                { label: "Target Flow", data: cd.targetFlow, borderColor: colFlow, borderDash: [5, 5], yAxisID: 'y-left', tension: 0.1, pointRadius: 0, borderWidth: 1.5, fill: false },
-                { label: "Temperature", data: cd.temp, borderColor: colTemp, yAxisID: 'y-temp', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: false },
-                { label: "Target Temp", data: cd.targetTemp, borderColor: colTemp, borderDash: [5, 5], yAxisID: 'y-temp', tension: 0.1, pointRadius: 0, borderWidth: 1.5, fill: false },
-                { label: "Weight", data: cd.weight, borderColor: colWeight, backgroundColor: 'rgba(211,84,0,0.1)', yAxisID: 'y-weight', tension: 0.3, pointRadius: 0, borderWidth: 2, fill: true }
-            ]
+            datasets: datasets
         },
-        plugins: [phaseBackgroundPlugin],
         options: {
-            responsive: true, maintainAspectRatio: false,
-            interaction: { mode: 'index', intersect: false },
-            plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 6 } }, tooltip: { backgroundColor: 'rgba(44, 62, 80, 0.9)', padding: 10 } },
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+                mode: 'index',
+                intersect: false,
+            },
+            plugins: {
+                legend: {
+                    position: 'top',
+                    labels: {
+                        usePointStyle: true,
+                        boxWidth: 8
+                    }
+                },
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+                            let label = context.dataset.label || '';
+                            if (label) {
+                                label += ': ';
+                            }
+                            if (context.parsed.y !== null) {
+                                label += context.parsed.y.toFixed(2);
+                            }
+                            return label;
+                        }
+                    }
+                }
+            },
             scales: {
-                x: { type: 'linear', title: { display: true, text: "Time (s)" }, grid: { display: false }, ticks: { stepSize: 5 } },
-                'y-left': { type: 'linear', display: true, position: 'left', title: { display: true, text: "Pressure (bar) / Flow (ml/s)" }, min: 0, suggestedMax: 12 },
-                'y-weight': { type: 'linear', display: true, position: 'right', title: { display: true, text: "Weight (g)" }, min: 0, grid: { drawOnChartArea: false } },
-                'y-temp': { type: 'linear', display: true, position: 'right', title: { display: true, text: "Temperature (°C)" }, grid: { drawOnChartArea: false }, grace: '5%' }
+                x: {
+                    type: 'linear',
+                    position: 'bottom',
+                    title: { display: true, text: 'Time (s)' },
+                    ticks: { stepSize: 5 }
+                },
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    title: { display: true, text: 'Pressure (bar) / Flow (ml/s)' },
+                    min: 0
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    title: { display: true, text: 'Temperature (°C)' },
+                    grid: {
+                        drawOnChartArea: false // Only draw grid for main axis
+                    }
+                },
+                y2: {
+                    type: 'linear',
+                    display: hasWeight ? 'auto' : false, 
+                    position: 'right',
+                    title: { display: true, text: 'Weight (g)' },
+                    grid: { drawOnChartArea: false }
+                }
             }
         }
     });

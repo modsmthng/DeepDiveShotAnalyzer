@@ -124,23 +124,102 @@ h1 {
 /* Remove old upload grid classes just in case */
 .upload-grid, .unified-drop-container { display: none; }
 
-/* --- Controls & Settings --- */
-.controls-area { background: #f8f9fa; border: 1px solid #e9ecef; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: none; }
-.controls-title { font-weight: bold; margin-bottom: 10px; color: #2c3e50; display: block;}
-.controls-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
+/* --- Controls Container (Box Style) --- */
+.controls-box {
+    background: #fff;
+    border: 1px solid #dcdde1;
+    border-radius: 8px;
+    padding: 10px 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+}
 
-.control-group { background: white; padding: 8px; border-radius: 5px; border: 1px solid #eee; }
-.control-group h4 { margin: 0 0 5px 0; font-size: 0.85em; color: #7f8c8d; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; padding-bottom: 3px;}
+/* Header with Plus Button (Left Aligned) */
+.controls-header-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    user-select: none;
+    /* Remove border bottom here, we handle it in the grid/container if needed */
+}
 
-.group-basics { border-top: 3px solid #7f8c8d; }
-.group-pressure { border-top: 3px solid #3498db; }
-.group-target_pressure { border-top: 3px dashed #2980b9; }
-.group-flow { border-top: 3px solid #27ae60; }
-.group-target_flow { border-top: 3px dashed #1e8449; }
-.group-puckflow { border-top: 3px solid #9b59b6; }
-.group-temp { border-top: 3px solid #e74c3c; }
-.group-target_temp { border-top: 3px dashed #c0392b; }
-.group-system { border-top: 3px solid #f39c12; }
+.controls-header-row .toggle-plus-btn {
+    width: 24px; height: 24px; /* Slightly smaller than the main note toggle */
+    font-size: 16px;
+    border-radius: 50%;
+    background: #f1f4f6;
+    color: #3498db;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: bold;
+    border: 1px solid #dcdde1;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.controls-header-row:hover .toggle-plus-btn {
+    background: #3498db; 
+    color: white; 
+    border-color: #3498db;
+}
+
+.controls-title {
+    font-weight: 600;
+    color: #2c3e50;
+    font-size: 1em;
+}
+
+/* Responsive Grid for Checkboxes */
+.controls-grid {
+    display: flex;
+    flex-wrap: wrap; /* Allows items to flow side-by-side */
+    gap: 20px;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #eee;
+    animation: fadeIn 0.2s ease-out;
+}
+
+.controls-grid.collapsed {
+    display: none;
+}
+
+/* Individual Checkbox Group */
+.control-group {
+    background: #fdfdfd; 
+    padding: 10px; 
+    border-radius: 6px; 
+    border: 1px solid #eee;
+    flex: 1 1 160px; /* Min width 160px, grows to fill space */
+    min-width: 160px;
+}
+
+.control-group h4 {
+    margin: 0 0 8px 0;
+    font-size: 0.8em;
+    color: #7f8c8d;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid #eee; /* Default border */
+    padding-bottom: 4px;
+}
+
+/* Ensure colors are applied to the h4 borders via your existing group classes */
+@keyframes fadeIn { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
+
+/* --- Color Group Definitions (GaggiMate Palette) --- */
+
+/* 1. Control Groups (Borders in the Settings Area) */
+.group-weight { border-top: 3px solid #8B5CF6; }
+.group-basics { border-top: 3px solid #6B7280; }          /* Gray */
+.group-pressure { border-top: 3px solid #0066CC; }        /* Blue */
+.group-target_pressure { border-top: 3px dashed #0066CC; }/* Blue Dashed */
+.group-flow { border-top: 3px solid #63993D; }            /* Light Green */
+.group-target_flow { border-top: 3px dashed #63993D; }    /* Light Green Dashed */
+.group-puckflow { border-top: 3px solid #204D00; }        /* Dark Green */
+.group-temp { border-top: 3px solid #F0561D; }            /* Orange */
+.group-target_temp { border-top: 3px dashed #731F00; }    /* Dark Red/Brown */
+.group-system { border-top: 3px solid #8B5CF6; }          /* Purple */
 
 .checkbox-label { display: block; font-size: 13px; margin-bottom: 4px; cursor: pointer; }
 .checkbox-label input { margin-right: 6px; }
@@ -189,15 +268,17 @@ h1 {
     border-right: 2px solid #34495e;
 }
 
-.table-container th.group-basics { border-top: 3px solid #7f8c8d; }
-.table-container th.group-pressure { border-top: 3px solid #3498db; }
-.table-container th.group-target_pressure { border-top: 3px dashed #2980b9; }
-.table-container th.group-flow { border-top: 3px solid #27ae60; }
-.table-container th.group-target_flow { border-top: 3px dashed #1e8449; }
-.table-container th.group-puckflow { border-top: 3px solid #9b59b6; }
-.table-container th.group-temp { border-top: 3px solid #e74c3c; }
-.table-container th.group-target_temp { border-top: 3px dashed #c0392b; }
-.table-container th.group-system { border-top: 3px solid #f39c12; }
+/* 2. Table Headers (Top Borders) */
+.table-container th.group-weight { border-top: 3px solid #8B5CF6; }
+.table-container th.group-basics { border-top: 3px solid #6B7280; }
+.table-container th.group-pressure { border-top: 3px solid #0066CC; }
+.table-container th.group-target_pressure { border-top: 3px dashed #0066CC; }
+.table-container th.group-flow { border-top: 3px solid #63993D; }
+.table-container th.group-target_flow { border-top: 3px dashed #63993D; }
+.table-container th.group-puckflow { border-top: 3px solid #204D00; }
+.table-container th.group-temp { border-top: 3px solid #F0561D; }
+.table-container th.group-target_temp { border-top: 3px dashed #731F00; }
+.table-container th.group-system { border-top: 3px solid #8B5CF6; }
 
 .table-container td {
     padding: 8px 10px;
@@ -210,15 +291,18 @@ h1 {
 .table-container tbody tr:nth-child(even) { background-color: #fcfcfc; }
 .table-container tbody tr:hover { background-color: #f1f4f6; }
 
-.table-container td.group-basics { background-color: rgba(127, 140, 141, 0.04); }
-.table-container td.group-pressure { background-color: rgba(52, 152, 219, 0.05); }
-.table-container td.group-target_pressure { background-color: rgba(41, 128, 185, 0.03); }
-.table-container td.group-flow { background-color: rgba(39, 174, 96, 0.05); }
-.table-container td.group-target_flow { background-color: rgba(30, 132, 73, 0.03); }
-.table-container td.group-puckflow { background-color: rgba(155, 89, 182, 0.04); }
-.table-container td.group-temp { background-color: rgba(231, 76, 60, 0.05); }
-.table-container td.group-target_temp { background-color: rgba(192, 57, 43, 0.03); }
-.table-container td.group-system { background-color: rgba(243, 156, 18, 0.04); }
+/* 3. Table Body Cells (Background Tints) */
+/* Calculated RGBA values based on the Hex codes with ~5% opacity */
+.table-container td.group-weight { background-color: rgba(139, 92, 246, 0.05); }
+.table-container td.group-basics { background-color: rgba(107, 114, 128, 0.05); }
+.table-container td.group-pressure { background-color: rgba(0, 102, 204, 0.05); }
+.table-container td.group-target_pressure { background-color: rgba(0, 102, 204, 0.03); }
+.table-container td.group-flow { background-color: rgba(99, 153, 61, 0.05); }
+.table-container td.group-target_flow { background-color: rgba(99, 153, 61, 0.03); }
+.table-container td.group-puckflow { background-color: rgba(32, 77, 0, 0.05); }
+.table-container td.group-temp { background-color: rgba(240, 86, 29, 0.05); }
+.table-container td.group-target_temp { background-color: rgba(115, 31, 0, 0.03); }
+.table-container td.group-system { background-color: rgba(139, 92, 246, 0.05); }
 
 .table-container td.phase-col {
     background-color: #ffffff !important; 
@@ -333,27 +417,182 @@ tfoot td { border-bottom: none; color: #2c3e50; }
 
 @media (max-width: 800px) { .library-status-bar { grid-template-columns: 1fr; } }
 
-/* --- Detailed Info Section --- */
+/* --- Detailed Info Section (New GaggiMate Header) --- */
 .file-info-container {
-    background: #ecf0f1; border-radius: 8px; margin-bottom: 20px; 
-    border-left: 5px solid #3498db; overflow: hidden; display: none;
+    background: #fff;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    border: 1px solid #dcdde1; 
+    overflow: hidden; 
+    display: none; /* Wird per JS eingeblendet */
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
 }
-.file-info-header { padding: 15px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
-.file-info-text { flex-grow: 1; }
-.info-btn { background: #3498db; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
-.info-btn:hover { background: #2980b9; }
 
-.extended-info { display: none; background: #fff; border-top: 1px solid #ddd; padding: 20px; animation: slideDown 0.3s ease-out; }
-@keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+.file-info-header { 
+    padding: 15px 20px; 
+    display: flex; 
+    align-items: center; 
+    gap: 15px;
+    background: #fff;
+    border-bottom: 1px solid transparent; /* Unsichtbar wenn zugeklappt */
+    transition: border-color 0.3s;
+}
 
-.details-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; }
-.detail-section h5 { margin: 0 0 10px 0; color: #2c3e50; border-bottom: 2px solid #f0f2f5; padding-bottom: 5px; font-size: 1em; text-transform: uppercase; }
-.detail-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 0.9em; border-bottom: 1px dashed #eee; padding-bottom: 2px; }
-.detail-label { color: #7f8c8d; font-weight: 500; }
-.detail-val { color: #333; font-weight: bold; text-align: right; }
-.detail-notes { margin-top: 10px; background: #f9f9f9; padding: 10px; border-radius: 4px; font-style: italic; color: #555; border: 1px solid #eee; font-size: 0.9em; }
+/* Linie sichtbar machen, wenn aufgeklappt (Klasse 'expanded' wird vom JS gesetzt) */
+.file-info-container.expanded .file-info-header {
+    border-bottom: 1px solid #eee;
+}
+
+/* 1. Toggle Button (Plus/Minus) */
+.toggle-plus-btn {
+    width: 32px; height: 32px;
+    border-radius: 50%;
+    background: #f1f4f6;
+    color: #3498db;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; font-weight: bold;
+    cursor: pointer;
+    border: 1px solid #dcdde1;
+    transition: all 0.2s;
+    flex-shrink: 0;
+    user-select: none;
+}
+.toggle-plus-btn:hover { background: #3498db; color: white; border-color: #3498db; }
+
+/* 2. Text Area (Two Rows) */
+.header-text-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex-grow: 1;
+    overflow: hidden;
+}
+
+.header-profile-title {
+    font-size: 1.2em;
+    font-weight: 700;
+    color: #2c3e50;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    line-height: 1.2;
+}
+
+.header-meta-line {
+    font-size: 0.9em;
+    color: #7f8c8d;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+
+.meta-separator { color: #bdc3c7; font-size: 0.8em; }
+
+/* 3. Action Buttons (Right Side) */
+.header-actions {
+    display: flex;
+    gap: 10px;
+    margin-left: auto;
+    flex-shrink: 0;
+}
+
+.header-action-btn {
+    width: 32px; height: 32px;
+    border-radius: 6px;
+    border: 1px solid #dcdde1;
+    background: white;
+    color: #95a5a6;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+}
+
+.header-action-btn svg { width: 16px; height: 16px; }
+
+.header-action-btn.export:hover { border-color: #27ae60; color: #27ae60; background: #f0fdf4; }
+.header-action-btn.delete:hover { border-color: #e74c3c; color: #e74c3c; background: #fceceb; }
+
+/* Expanded Content Area */
+.extended-info {
+    display: none; /* Standardmäßig zu */
+    background: #fff;
+    padding: 20px;
+    animation: slideDown 0.2s ease-out;
+}
+@keyframes slideDown { from { opacity: 0; transform: translateY(-5px); } to { opacity: 1; transform: translateY(0); } }
 
 .chart-wrapper { margin-top: 40px; height: 600px; display: none; position: relative; }
+
+/* Verstecke den alten Button, falls er noch irgendwo im HTML ist */
+#toggle-info-btn { display: none; }
+
+/* --- Data Editor Form (Metadata) --- */
+.editor-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.editor-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.editor-label {
+    font-size: 0.85em;
+    font-weight: 600;
+    color: #7f8c8d;
+    text-transform: uppercase;
+}
+
+/* Inputs styling (GaggiMate Look) */
+.editor-input, .editor-select, .editor-textarea {
+    padding: 8px 10px;
+    border: 1px solid #dcdde1;
+    border-radius: 4px;
+    font-size: 0.95em;
+    color: #2c3e50;
+    font-family: inherit;
+    background: #fff;
+    transition: border-color 0.2s;
+}
+
+.editor-input:focus, .editor-select:focus, .editor-textarea:focus {
+    outline: none;
+    border-color: #3498db;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.1);
+}
+
+.editor-textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Export Button in Editor */
+.editor-actions {
+    margin-top: 20px;
+    padding-top: 15px;
+    border-top: 1px dashed #dcdde1;
+    text-align: right;
+}
+
+.btn-save-export {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    font-size: 0.9em;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: background 0.2s;
+}
+
+.btn-save-export:hover { background-color: #219150; }
 
 /* --- Floating Library Panel (Professional Look with Subtle Gray) --- */
 .sticky-library-panel {
