@@ -26,7 +26,7 @@
     flex: 0 0 90px; justify-content: center; color: #3498db; font-weight: 700;
     font-size: 0.85em; cursor: pointer; background: #fff; text-transform: uppercase;
 }
-.status-badge.import-action { border: 2px dashed #3498db; background-color: #fbfbfb; }
+.status-badge.import-action { border: 2px dashed #3498db; background-color: #fff; }
 .status-badge.stats-action { border: 1px solid #3498db; }
 
 .status-badge.import-action:hover, .status-badge.stats-action:hover {

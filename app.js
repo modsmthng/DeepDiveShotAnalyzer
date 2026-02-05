@@ -607,7 +607,6 @@ function renderControls() {
         if (isCollapsed) { 
             gridEl.classList.remove('collapsed'); 
             btn.classList.add('open'); 
-            // FIX: Nutze 'flex' statt 'block', damit justify-content funktioniert!
             if(footerEl) footerEl.style.display = 'flex'; 
         } else { 
             gridEl.classList.add('collapsed'); 
