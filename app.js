@@ -523,7 +523,6 @@ function renderControls() {
         settingsDiv.id = 'analysis-settings';
         // Reuse the .controls-box class for consistent look
         settingsDiv.className = 'controls-box'; 
-        settingsDiv.style.display = 'block'; // Ensure it's visible
         settingsDiv.innerHTML = `
             <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 20px; font-size: 0.9em;">
                 <h4 style="margin: 0; color: #34495e; font-weight:600;">Latency Settings</h4>
@@ -535,11 +534,10 @@ function renderControls() {
                     <label style="cursor:pointer; user-select:none; display:flex; align-items:center;"><input type="checkbox" id="auto-sensor-delay" ${isSensorDelayAuto ? 'checked' : ''} style="margin-right:4px;"> Auto</label>
                 </div>
             </div>`;
-        
-        // Append to wrapper (Order: Latency first, or Columns first? User said "Latency Settings darunter" -> So Columns first)
-        // But to keep code simple, we usually just append. If we want Latency BELOW columns, we append it AFTER columns.
-        // Let's create columns first below.
     }
+    
+    // FIX: Always ensure it is visible (it might have been hidden by unloadShot)
+    settingsDiv.style.display = 'block';
 
     // --- 2. DISPLAYED COLUMNS (Collapsible Box) ---
     // Check if the Columns Container already exists
