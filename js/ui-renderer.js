@@ -1,4 +1,5 @@
-// ui-renderer.js (Updated)
+// ui-renderer.js
+import { appState } from './state.js';
 
 // --- Global Chart Instance ---
 let myChart = null;
@@ -105,7 +106,7 @@ export function renderFileInfo(shot, fileName) {
         const doseMatch = profileName.match(/(\d+(?:\.\d+)?)g\b/i);
         if (doseMatch) {
             detectedDoseIn = parseFloat(doseMatch[1]);
-            if (window.currentShotData) window.currentShotData.doseIn = detectedDoseIn;
+            if (appState.currentShotData) appState.currentShotData.doseIn = detectedDoseIn;
         }
     }
 
@@ -120,14 +121,14 @@ export function renderFileInfo(shot, fileName) {
             if (maxW > 0) calcDoseOut = parseFloat(maxW.toFixed(1));
         }
     }
-    if ((!shot.doseOut || shot.doseOut == 0) && calcDoseOut > 0 && window.currentShotData) {
-        window.currentShotData.doseOut = calcDoseOut;
+    if ((!shot.doseOut || shot.doseOut == 0) && calcDoseOut > 0 && appState.currentShotData) {
+        appState.currentShotData.doseOut = calcDoseOut;
     }
 
     let ratio = shot.ratio || 0;
     if ((!ratio || ratio == 0) && detectedDoseIn > 0 && calcDoseOut > 0) {
         ratio = (calcDoseOut / detectedDoseIn).toFixed(1);
-        if (window.currentShotData) window.currentShotData.ratio = parseFloat(ratio);
+        if (appState.currentShotData) appState.currentShotData.ratio = parseFloat(ratio);
     }
 
     const idStr = shot.id ? `#${shot.id}` : "";
