@@ -1,4 +1,18 @@
 /* --- Global Reset & Base Styles --- */
+
+:root {
+    /* --- Design System Colors --- */
+    --color-dark: #2c3e50;       /* Main Text / Contrast Color */
+    --color-blue: #3498db;       /* Brand Blue (Import, Active States) */
+    --color-green-excel: #1D6F42; /* Stats Green (Excel-like) */
+    --color-bg-light: #f4f4f9;   /* Backgrounds */
+    --color-white: #ffffff;
+    
+    /* Semantic mapping */
+    --theme-primary: var(--color-dark);
+    --theme-accent: var(--color-blue);
+}
+
 body { 
     font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
     background-color: #f4f4f9; 
