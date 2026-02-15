@@ -1,10 +1,10 @@
 # DeepDiveShotAnalyzer
-Deep Dive Shot Analyzer
+Deep Dive Shot Analyzer (outdated)
 (for GaggiMate)
 by modsmthng
 *Used to develop Automatic Pro v3*
 
-**Note:** No longer current, old phase stop detection algorithm, but remains online for non-nightly users. Current version migrated to GM UI
+_**Note:** No longer current, old phase stop detection algorithm, but remains online for non-nightly users. Current version migrated to GM UI_
 
 **https://modsmthng.github.io/DeepDiveShotAnalyzer/**
 
