@@ -1,5 +1,6 @@
-# DeepDiveShotAnalyzer
-Deep Dive Shot Analyzer (outdated)
+# DeepDiveShotAnalyzer _outdated_
+
+Deep Dive Shot Analyzer _outdated_
 (for GaggiMate)
 by modsmthng
 *Used to develop Automatic Pro v3*
