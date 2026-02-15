@@ -4,6 +4,8 @@ Deep Dive Shot Analyzer
 by modsmthng
 *Used to develop Automatic Pro v3*
 
+**Note:** No longer current, old phase stop detection algorithm, but remains online for non-nightly users. Current version migrated to GM UI
+
 **https://modsmthng.github.io/DeepDiveShotAnalyzer/**
 
 # DISCLAIMER
